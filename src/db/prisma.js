@@ -1,11 +1,11 @@
-import "dotenv/config";
-import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '../../prisma/generated/prisma/client.js';
+ import "dotenv/config";
+ import { PrismaPg } from '@prisma/adapter-pg';
+ import { PrismaClient } from '../../prisma/generated/prisma/client.js';
 
-const connectionString = `${process.env.DATABASE_URL}`;
+ const connectionString = `${process.env.DATABASE_URL}`;
 
-const adapter = new PrismaPg({ connectionString });
-const prisma = new PrismaClient({ adapter });
-console.log("[INFO]: Connected to PostgreSQL via Prisma");
+ const adapter = new PrismaPg({ connectionString });
+ const prisma = new PrismaClient({ adapter });
+ console.log("[INFO]: Connected to PostgreSQL via Prisma");
 
-export default prisma;
+ export default prisma;

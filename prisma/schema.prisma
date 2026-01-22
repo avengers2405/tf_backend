@@ -6,16 +6,95 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "./generated/prisma"
+  binaryTargets = ["native", "windows"]
 }
 
 datasource db {
   provider = "postgresql"
 }
 
-model User {
-  id String @id @default(cuid())
-  name String
-  email String @unique
-  createdAt DateTime @default(now())
+model Project_group_association {
+  project_id String
+  group_id   String
+
+  @@id([project_id, group_id])
+  @@map("Project_group_association")
+}
+
+model Project {
+  project_id        String  @id
+  title             String
+  description       String
+  technology_stack  String
+  academic_year     String
+  repo_id           String
+  current_phase_id  Int
+
+  @@map("Project")
+}
+
+model Project_phase {
+  phase_id          Int
+  project_id        String
+  phase_name        String
+  phase_description String
+  start_date        DateTime
+  end_date          DateTime
+  status            Phase_status
+  comments          String?
+
+  @@id([phase_id, project_id])
+  @@map("Project_phase")
+}
+
+enum Phase_status {
+  OPEN
+  CLOSED
+  LOCKED
+}
+
+model Student_group {
+  student_id String
+  group_id   String 
+
+  @@id([student_id, group_id])
+  @@map("Student_group")
+}
+
+model Group_teacher_association {
+
+  teacher_id String
+  group_id String
+
+  @@id([teacher_id, group_id])
+  @@map("Group_teacher_association")
+}
+
+model Git_logbook_entries {
+  project_id          String   @id
+  commit_id           String
+  commit_message      String
+  files_changed       Int
+  additions           Int
+  deletions           Int
+  difficulty_of_commit Int
+  commit_timestamp    DateTime
+  received_at         DateTime @default(now())
+
+  @@map("git_logbook_entries")
+}
+
+model Git_repository {
+  repo_id   String @id
+  repo_url  String
+
+  @@map("Git_repository")
+}
+
+model Git_repo_project_association {
+  group_id String
+  repo_id  String
+
+  @@id([group_id, repo_id])
+  @@map("Git_repo_project_association")
 }

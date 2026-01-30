@@ -7,4 +7,4 @@ import prisma from './prisma.js';
 // res = await prisma.user.findMany();
 // console.log("[DEBUG]: Users in PostgreSQL:", JSON.stringify(res), "\n\n");
 
-// export { mongoose, prisma };
+export { mongoose, prisma };

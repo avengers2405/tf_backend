@@ -98,3 +98,4 @@ model Git_repo_project_association {
   @@id([group_id, repo_id])
   @@map("Git_repo_project_association")
 }
+

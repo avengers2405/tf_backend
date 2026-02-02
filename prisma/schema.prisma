@@ -99,3 +99,48 @@ model Git_repo_project_association {
   @@map("Git_repo_project_association")
 }
 
+model Student_TNP {
+  student_id    String   @id
+  name          String
+  email         String   @unique
+  cgpa          Float
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  
+  responses     DriveResponse[]
+
+  @@map("Student_TNP")
+}
+
+model CompanyDrive {
+  drive_id              String   @id @default(uuid())
+  company_name          String
+  min_cgpa              Float
+  registration_deadline DateTime
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+  
+  responses             DriveResponse[]
+
+  @@map("CompanyDrive")
+}
+
+model DriveResponse {
+  response_id   String   @id @default(uuid())
+  student_id    String
+  drive_id      String
+  is_interested Boolean? @default(false)
+  responded_at  DateTime?
+  created_at    DateTime @default(now())
+  
+  email_token_hash     String?             
+  token_expires_at     DateTime?
+  notification_sent_at DateTime?
+
+  student       Student_TNP      @relation(fields: [student_id], references: [student_id])
+  drive         CompanyDrive @relation(fields: [drive_id], references: [drive_id])
+
+  @@unique([student_id, drive_id])
+  @@map("DriveResponse")
+}
+

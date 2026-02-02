@@ -7,6 +7,8 @@ import skillMap from "./skills.js";
 import cors from "cors";
 import { createRequire } from "module";
 import {  mongoose, prisma } from './db/index.js';
+import emailActionController from './controllers/emailActionController.js';
+import driveController from './controllers/driveController.js';
 
 // --- FAIL-SAFE PDF-PARSE IMPORT ---
 // pdf-parse is a CommonJS module, so we use createRequire to import it
@@ -16,6 +18,8 @@ const pdfParse = require("pdf-parse");
 const app = express();
 const PORT = process.env.PORT || 5000;
 const upload = multer({ dest: "uploads/" });
+app.use(express.json()); 
+
 
 /* --------------------
    TEXT CLEANING
@@ -135,6 +139,14 @@ app.get('/health', async (req, res) => {
 
     res.send("Health Checks done. Check logs for more info.", 200);
 })
+
+app.get('/email-action', (req, res) =>
+  emailActionController.handleEmailConfirmation(req, res)
+);
+
+app.post('/drives', (req, res) =>
+  driveController.createDrive(req, res)
+);
 
 app.listen(PORT, () => {
     console.log(`Backend flying on port ${PORT}`);

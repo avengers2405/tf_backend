@@ -1,0 +1,4 @@
+project_id,title,description,technology_stack,academic_year,repo_url,current_phase_id
+101,Smart Attendance System,"Automated attendance using face recognition","Python, OpenCV, Flask, MySQL",2023-24,https://github.com/Aastha-Shah-22/PICT_LAB,2
+102,Online Examination Portal,"Web-based examination system with AI proctoring","MERN Stack, WebRTC",2023-24,https://github.com/Aastha-Shah-22/PICT_LAB1,3
+103,Library Management System,"Manages books, students, issue and return workflow","Java, Spring Boot, MySQL",2022-23,https://github.com/Aastha-Shah-22/PICT_LAB2,1

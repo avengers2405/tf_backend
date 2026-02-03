@@ -3,7 +3,7 @@ import crypto from 'crypto';
 
 class JwtService {
   constructor() {
-    this.secret = process.env.JWT_SECRET || 'your-secret-key';
+    this.secret = process.env.JWT_SECRET;
   }
 
   generateToken(student_id, drive_id, expiresAt) {

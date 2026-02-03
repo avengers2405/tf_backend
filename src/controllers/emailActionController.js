@@ -46,7 +46,7 @@ class EmailActionController {
         return;
       }
 
-      if (driveResponse.is_interested !== null) {
+      if (driveResponse.is_interested === true) {
         res.status(200).json({
           message: 'You have already confirmed your interest',
           student: driveResponse.student.name,

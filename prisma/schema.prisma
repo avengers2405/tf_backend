@@ -1,11 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "windows"]
 }
 
@@ -13,35 +7,204 @@ datasource db {
   provider = "postgresql"
 }
 
-model Project_group_association {
-  project_id String
-  group_id   String
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String // would contain hashed value
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@id([project_id, group_id])
-  @@map("Project_group_association")
+  student   Student?
+  teacher   Teacher?
 }
 
+model Student {
+  registrationNumber String   @id
+  prnNumber         String   @unique
+  userId            String   @unique
+  teRollNumber String
+  beRollNumber String
+
+  firstName          String
+  middleName         String?
+  lastName           String
+  dateOfBirth        DateTime @db.Date
+  gender             Gender
+
+  primaryEmail       String   @unique
+  secondaryEmail     String?
+  studentEmail       String
+  primaryPhone       String   @unique
+  secondaryPhone     String?
+  currentAddress     Json
+  permanentAddress   Json
+
+  batch Int
+  department String
+
+  xClass            Decimal?
+  xClassBoard       String?
+  xClassPassingYear Int?
+  xGapYear          Int      @default(0)
+  xGapReason        String? // only if xGapYear exists
+
+  xiiClass            Decimal? // xiiClass and diploma cannot coexist
+  xiiClassBoard       String? // if xiiClass exists
+  xiiClassPassingYear Int? // if xiiClass exists
+  xiiGapYear          Int      @default(0) // if xiiClass exists
+  xiiGapReason        String? // if xiiGapYear exists
+
+  diploma            Decimal? // can be converted to jsonb if they contain other info like school, year of passing, etc.
+  diplomaUniversity  String? // if diploma exists
+  diplomaPassingYear Int? // if diploma exists
+  diplomaGapYear     Int      @default(0) // if diploma exists
+  diplomaGapReason   String?
+
+  cetPercentile Decimal?
+  jeePercentile Decimal?
+  amcatMarks   Decimal?
+  amcatDetails Json?
+
+  activeBacklog Int @default(0)
+  activeBacklogSem String? // only if activebacklog > 0
+  passiveBacklog Int @default(0)
+  yd Boolean @default(false) // only if activebacklog || passivebacklog
+
+  aadharNumber String?
+  panNumber    String?
+  passport String?
+  citizenship String?
+  higherEducationPlans Boolean @default(false)
+
+  teFeeLink String?
+  beFeeLink String?
+
+  user User @relation(fields: [userId], references: [id])
+  StudentSkills Student_skill[]
+  Documents Document[]
+  StudentGroups Student_group[]
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model Skill {
+  id String @id @default(cuid())
+  name String @unique
+
+  StudentSkills Student_skill[]
+}
+
+model Student_skill {
+  studentRegistrationNumber String
+  skillId String
+
+  student Student @relation(fields: [studentRegistrationNumber], references: [registrationNumber])
+  skill Skill @relation(fields: [skillId], references: [id])
+
+  @@id([studentRegistrationNumber, skillId])
+}
+
+model Document {
+  id String @id @default(cuid())
+  studentRegistrationNumber String
+  name String?
+  documentType String
+  documentUrl String
+  createdAt DateTime @default(now())
+
+  Student Student @relation(fields: [studentRegistrationNumber], references: [registrationNumber])
+}
+
+model Teacher {
+  id String @id @default(cuid())
+  userId String @unique
+  firstName  String
+  lastName   String
+  email      String @unique
+  phone      String @unique
+  department String
+  isActive Boolean @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+  TeacherRoles TeacherRole[]
+  AssignedTeacherRoles TeacherRole[] @relation("AssignedBy")
+}
+
+model Role {
+  id String @id @default(cuid())
+  name String
+  description String
+
+  TeacherRoles TeacherRole[]
+  RolePermissions RolePermission[]
+}
+
+model TeacherRole {
+  teacherId String
+  roleId String
+  assignedById String?
+  assignedAt DateTime @default(now())
+
+  teacher Teacher @relation(fields: [teacherId], references: [id])
+  role Role @relation(fields: [roleId], references: [id])
+  assignedBy Teacher? @relation("AssignedBy", fields: [assignedById], references: [id])
+
+  @@id([teacherId, roleId])
+}
+
+model Permission {
+  id String @id @default(cuid())
+  name String
+  description String?
+
+  RolePermissions RolePermission[]
+}
+
+model RolePermission {
+  roleId String
+  permissionId String
+
+  role Role @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+}
+
+
+// --- Project Models ---
+
 model Project {
-  project_id        String  @id
-  title             String
-  description       String
-  technology_stack  String
-  academic_year     String
-  repo_id           String
-  current_phase_id  Int
+  project_id       String   @id @default(uuid())
+  title            String
+  description      String   @db.Text
+  technology_stack String
+  academic_year    String
+  repo_url         String?  @unique
+  
+  current_phase_id Int?
+  phases           Project_phase[]
+  groups           Project_group_association[]
+  git_logs         Git_logbook_entries[]
+
 
   @@map("Project")
 }
 
 model Project_phase {
-  phase_id          Int
+  phase_id          Int      @default(autoincrement())
   project_id        String
   phase_name        String
-  phase_description String
-  start_date        DateTime
-  end_date          DateTime
-  status            Phase_status
+  phase_description String   @db.Text
+  start_date        DateTime @db.Date
+  end_date          DateTime @db.Date
+  status            Phase_status @default(OPEN)
   comments          String?
+
+  // Relations
+  project           Project @relation(fields: [project_id], references: [project_id], onDelete: Cascade)
 
   @@id([phase_id, project_id])
   @@map("Project_phase")
@@ -53,49 +216,70 @@ enum Phase_status {
   LOCKED
 }
 
+// --- Group & User Models ---
+
+model Group {
+  group_id    String   @id @default(uuid())
+  group_name  String?  // Added for better identification
+  
+  // Relations
+  projects    Project_group_association[]
+  students    Student_group[]
+  teachers    Group_teacher_association[]
+
+  @@map("Group")
+}
+
+// --- Association Tables (Many-to-Many) ---
+
 model Student_group {
   student_id String
-  group_id   String 
+  group_id   String
+  group      Group  @relation(fields: [group_id], references: [group_id])
+  student Student @relation(fields: [student_id], references: [registrationNumber])
 
   @@id([student_id, group_id])
   @@map("Student_group")
 }
 
 model Group_teacher_association {
-
   teacher_id String
-  group_id String
+  group_id   String
+  group      Group  @relation(fields: [group_id], references: [group_id])
 
   @@id([teacher_id, group_id])
   @@map("Group_teacher_association")
 }
 
+model Project_group_association {
+  project_id String
+  group_id   String
+  project    Project @relation(fields: [project_id], references: [project_id])
+  group      Group   @relation(fields: [group_id], references: [group_id])
+
+  @@id([project_id, group_id])
+  @@map("Project_group_association")
+}
+
+// --- Git & Logging ---
 model Git_logbook_entries {
-  project_id          String   @id
-  commit_id           String
-  commit_message      String
-  files_changed       Int
-  additions           Int
-  deletions           Int
-  difficulty_of_commit Int
-  commit_timestamp    DateTime
-  received_at         DateTime @default(now())
+  id                   String   @id @default(uuid())
+  project_id           String
+  commit_id            String   @unique
+  commit_message       String   @db.Text
+  files_changed        Int      @default(0)
+  difficulty_of_commit Int      @default(1)
+  commit_timestamp     DateTime
+  received_at          DateTime @default(now())
+
+  // Relations
+  project              Project @relation(fields: [project_id], references: [project_id])
 
   @@map("git_logbook_entries")
 }
 
-model Git_repository {
-  repo_id   String @id
-  repo_url  String
-
-  @@map("Git_repository")
+enum Gender {
+  Male
+  Female
+  Other
 }
-
-model Git_repo_project_association {
-  group_id String
-  repo_id  String
-
-  @@id([group_id, repo_id])
-  @@map("Git_repo_project_association")
-}
-

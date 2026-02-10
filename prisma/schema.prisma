@@ -85,6 +85,7 @@ model Student {
     documents       Document[]
     student_groups  Student_Group_Association[]
     drive_responses Drive_Response[]
+    notifications   Notifications[]
 
     created_at DateTime @default(now())
     updated_at DateTime @updatedAt
@@ -169,6 +170,15 @@ model Drive_Response {
 
     @@unique([student_id, drive_id])
     @@map("DriveResponse")
+}
+
+model Notifications {
+    id          String   @id @default(cuid())
+    student_id   String
+    message      String
+    created_at  DateTime @default(now())
+
+    student Student @relation(fields: [student_id], references: [registration_number])
 }
 
 // All projects

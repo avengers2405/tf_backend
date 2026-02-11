@@ -145,6 +145,7 @@ import cors from "cors";
 import "dotenv/config";
 //import resumeRoutes from "./routes/resume.routes.js";
 import webhookRoutes from "./routes/webhook.routes.js";
+import projectRoutes from "./routes/project-progress.routes.js";
 import { verifyGitHubSignature } from "./middleware/verifyGithub.js";
 
 const app = express();
@@ -170,6 +171,9 @@ app.use(express.json({
 // All webhook routes will start with /webhook
 app.use("/webhook", webhookRoutes); 
 
+app.use("/project-progress", projectRoutes);
+
+app.use("/project-progress", projectRoutes);
 app.listen(PORT, () => {
     console.log(`🚀 Enterprise Server running on port ${PORT}`);
 });

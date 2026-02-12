@@ -7,7 +7,7 @@ import prisma from '../db/prisma.js';
 class DriveService {
   async createDrive(data) {
     try {
-      const drive = await prisma.companyDrive.create({
+      const drive = await prisma.company_Drive.create({
         data: {
           company_name: data.company_name,
           min_cgpa: data.min_cgpa,
@@ -35,7 +35,7 @@ class DriveService {
     min_cgpa,
     registration_deadline
   ) {
-    const eligibleStudents = await prisma.student_TNP.findMany({
+    const eligibleStudents = await prisma.student.findMany({
       where: { cgpa: { gte: min_cgpa } }
     });
 
@@ -44,16 +44,16 @@ class DriveService {
     for (const student of eligibleStudents) {
       try {
         const token = jwtService.generateToken(
-          student.student_id,
+          student.registration_number,
           drive_id,
           registration_deadline
         );
 
         const tokenHash = jwtService.hashToken(token);
 
-        await prisma.driveResponse.create({
+        await prisma.drive_Response.create({
           data: {
-            student_id: student.student_id,
+            student_id: student.registration_number,
             drive_id: drive_id,
             email_token_hash: tokenHash,
             token_expires_at: registration_deadline,
@@ -61,18 +61,18 @@ class DriveService {
         });
 
         const emailSent = await emailService.sendConfirmationEmail({
-          student_email: student.email,
-          student_name: student.name,
+          student_email: student.primary_email,
+          student_name: student.first_name + " " + student.last_name,
           company_name: company_name,
           token: token,
         });
 
         // Update email status
         if (emailSent) {
-          await prisma.driveResponse.update({
+          await prisma.drive_Response.update({
             where: {
               student_id_drive_id: {
-                student_id: student.student_id,
+                student_id: student.registration_number,
                 drive_id: drive_id,
               },
             },
@@ -82,7 +82,7 @@ class DriveService {
           });
         }
       } catch (error) {
-        console.error(`Failed to notify student ${student.student_id}:`, error);
+        console.error(`Failed to notify student ${student.registration_number}:`, error);
       }
     }
   }

@@ -13,6 +13,8 @@ class EmailService {
     try {
       const confirmationUrl = `${this.frontendUrl}/email-action?token=${encodeURIComponent(payload.token)}`;
 
+      console.log(payload.student_email);
+
       const msg = {
         to: payload.student_email,
         from: this.senderEmail,

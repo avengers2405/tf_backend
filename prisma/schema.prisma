@@ -21,44 +21,45 @@ model User {
 
 model Student {
     registration_number String @id
-    prn_number          String @unique
+    prn_number          String? @unique
     user_id             String @unique
-    te_roll_number      String
-    be_roll_number      String
+    te_roll_number      String?
+    be_roll_number      String?
+    cgpa                Float
 
-    first_name    String
+    first_name    String?
     middle_name   String?
-    last_name     String
+    last_name     String?
     date_of_birth DateTime @db.Date
-    gender        Gender
+    gender        Gender?
 
     primary_email     String  @unique
     secondary_email   String?
-    student_email     String
-    primary_phone     String  @unique
+    student_email     String?
+    primary_phone     String?  @unique
     secondary_phone   String?
-    current_address   Json
-    permanent_address Json
+    current_address   Json?
+    permanent_address Json?
 
-    batch      Int
-    department String
+    batch      Int?
+    department String?
 
     x_class             Decimal?
     x_class_board       String?
     x_class_passing_year Int?
-    x_gap_year          Int      @default(0)
+    x_gap_year          Int?      @default(0)
     x_gap_reason        String? // only if x_gap_year exists
 
     xii_class             Decimal? // xii_class and diploma cannot coexist
     xii_class_board       String? // if xii_class exists
     xii_class_passing_year Int? // if xii_class exists
-    xii_gap_year          Int      @default(0) // if xii_class exists
+    xii_gap_year          Int?      @default(0) // if xii_class exists
     xii_gap_reason        String? // if xii_gap_year exists
 
     diploma             Decimal? // can be converted to jsonb if they contain other info like school, year of passing, etc.
     diploma_university  String? // if diploma exists
     diploma_passing_year Int? // if diploma exists
-    diploma_gap_year     Int      @default(0) // if diploma exists
+    diploma_gap_year     Int?      @default(0) // if diploma exists
     diploma_gap_reason   String?
 
     cet_percentile Decimal?

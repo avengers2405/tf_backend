@@ -1,146 +1,329 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client-js"
-  binaryTargets = ["native", "windows"]
+    provider      = "prisma-client-js"
+    binaryTargets = ["native", "windows"]
 }
 
 datasource db {
-  provider = "postgresql"
+    provider = "postgresql"
 }
 
-model Project_group_association {
-  project_id String
-  group_id   String
+// Defining users: students, teachers, etc.
+model User {
+    id         String   @id @default(cuid())
+    username   String   @unique
+    password   String // would contain hashed value
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
 
-  @@id([project_id, group_id])
-  @@map("Project_group_association")
+    student Student?
+    teacher Teacher?
 }
 
+model Student {
+    registration_number String @id
+    prn_number          String @unique
+    user_id             String @unique
+    te_roll_number      String
+    be_roll_number      String
+
+    first_name    String
+    middle_name   String?
+    last_name     String
+    date_of_birth DateTime @db.Date
+    gender        Gender
+
+    primary_email     String  @unique
+    secondary_email   String?
+    student_email     String
+    primary_phone     String  @unique
+    secondary_phone   String?
+    current_address   Json
+    permanent_address Json
+
+    batch      Int
+    department String
+
+    x_class             Decimal?
+    x_class_board       String?
+    x_class_passing_year Int?
+    x_gap_year          Int      @default(0)
+    x_gap_reason        String? // only if x_gap_year exists
+
+    xii_class             Decimal? // xii_class and diploma cannot coexist
+    xii_class_board       String? // if xii_class exists
+    xii_class_passing_year Int? // if xii_class exists
+    xii_gap_year          Int      @default(0) // if xii_class exists
+    xii_gap_reason        String? // if xii_gap_year exists
+
+    diploma             Decimal? // can be converted to jsonb if they contain other info like school, year of passing, etc.
+    diploma_university  String? // if diploma exists
+    diploma_passing_year Int? // if diploma exists
+    diploma_gap_year     Int      @default(0) // if diploma exists
+    diploma_gap_reason   String?
+
+    cet_percentile Decimal?
+    jee_percentile Decimal?
+    amcat_marks    Decimal?
+    amcat_details  Json?
+
+    active_backlog     Int     @default(0)
+    active_backlog_sem String? // only if activebacklog > 0
+    passive_backlog    Int     @default(0)
+    yd                 Boolean @default(false) // only if activebacklog || passivebacklog
+
+    aadhar_number          String?
+    pan_number             String?
+    passport               String?
+    citizenship            String?
+    higher_education_plans Boolean @default(false)
+
+    te_fee_link String?
+    be_fee_link String?
+
+    user            User                        @relation(fields: [user_id], references: [id])
+    student_skills  Student_Skill_Association[]
+    documents       Document[]
+    student_groups  Student_Group_Association[]
+    drive_responses Drive_Response[]
+    notifications   Notifications[]
+
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+}
+
+model Teacher {
+    id         String   @id @default(cuid())
+    user_id    String   @unique
+    first_name String
+    last_name  String
+    email      String   @unique
+    phone      String   @unique
+    department String
+    is_active  Boolean  @default(true)
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+
+    user                   User          @relation(fields: [user_id], references: [id])
+    teacher_roles          TeacherRole[]
+    assigned_teacher_roles TeacherRole[] @relation("AssignedBy")
+}
+
+// Defining skills, will be associated with students, projects, etc.
+model Skill {
+    id   String @id @default(cuid())
+    name String @unique
+
+    student_skills Student_Skill_Association[]
+}
+
+model Student_Skill_Association {
+    student_registration_number String
+    skill_id                    String
+
+    student Student @relation(fields: [student_registration_number], references: [registration_number])
+    skill   Skill   @relation(fields: [skill_id], references: [id])
+
+    @@id([student_registration_number, skill_id])
+}
+
+// general table to store document details, can be used for resumes, certificates, etc.
+model Document {
+    id                          String   @id @default(cuid())
+    student_registration_number String
+    name                        String?
+    document_description        Json // store all details 
+    document_url                String
+    created_at                  DateTime @default(now())
+
+    student Student @relation(fields: [student_registration_number], references: [registration_number])
+}
+
+// Tables to store data related to company offers (projects, intersnhips, etc.)
+model Company_Drive {
+    drive_id              String   @id @default(uuid())
+    company_name          String
+    min_cgpa              Float
+    registration_deadline DateTime
+    created_at            DateTime @default(now())
+    updated_at            DateTime @updatedAt
+
+    responses Drive_Response[]
+
+    @@map("CompanyDrive")
+}
+
+// Table to store student responses
+model Drive_Response {
+    response_id   String    @id @default(uuid())
+    student_id    String
+    drive_id      String
+    is_interested Boolean?  @default(false)
+    responded_at  DateTime?
+    created_at    DateTime  @default(now())
+
+    email_token_hash     String?
+    token_expires_at     DateTime?
+    notification_sent_at DateTime?
+
+    student Student @relation(fields: [student_id], references: [registration_number])
+    drive   Company_Drive @relation(fields: [drive_id], references: [drive_id])
+
+    @@unique([student_id, drive_id])
+    @@map("DriveResponse")
+}
+
+model Notifications {
+    id          String   @id @default(cuid())
+    student_id   String
+    message      String
+    created_at  DateTime @default(now())
+
+    student Student @relation(fields: [student_id], references: [registration_number])
+}
+
+// All projects
 model Project {
-  project_id        String  @id
-  title             String
-  description       String
-  technology_stack  String
-  academic_year     String
-  repo_id           String
-  current_phase_id  Int
+    project_id       String  @id @default(uuid())
+    title            String
+    description      String  @db.Text
+    technology_stack String
+    academic_year    String
+    repo_url         String? @unique
 
-  @@map("Project")
+    current_phase_id Int?
+    phases           Project_Phase[]
+    groups           Project_Group_Association[]
+    git_logs         Git_logbook_entries[]
+
+    @@map("Project")
 }
 
-model Project_phase {
-  phase_id          Int
-  project_id        String
-  phase_name        String
-  phase_description String
-  start_date        DateTime
-  end_date          DateTime
-  status            Phase_status
-  comments          String?
+// composed of student, teacher
+model Group {
+    group_id   String  @id @default(uuid())
+    group_name String? // Added for better identification
 
-  @@id([phase_id, project_id])
-  @@map("Project_phase")
+    // Relations
+    projects Project_Group_Association[]
+    students Student_Group_Association[]
+    teachers Group_Teacher_Association[]
+
+    @@map("Group")
 }
 
-enum Phase_status {
-  OPEN
-  CLOSED
-  LOCKED
+model Project_Group_Association {
+    project_id String
+    group_id   String
+    project    Project @relation(fields: [project_id], references: [project_id])
+    group      Group   @relation(fields: [group_id], references: [group_id])
+
+    @@id([project_id, group_id])
+    @@map("Project_Group_Association")
 }
 
-model Student_group {
-  student_id String
-  group_id   String 
+model Project_Phase {
+    phase_id          Int          @default(autoincrement())
+    project_id        String
+    phase_name        String
+    phase_description String       @db.Text
+    start_date        DateTime     @db.Date
+    end_date          DateTime     @db.Date
+    status            Phase_Status @default(OPEN)
+    comments          String?
 
-  @@id([student_id, group_id])
-  @@map("Student_group")
+    project Project @relation(fields: [project_id], references: [project_id], onDelete: Cascade)
+
+    @@id([phase_id, project_id])
+    @@map("Project_Phase")
 }
 
-model Group_teacher_association {
-
-  teacher_id String
-  group_id String
-
-  @@id([teacher_id, group_id])
-  @@map("Group_teacher_association")
+enum Phase_Status {
+    OPEN
+    CLOSED
+    LOCKED
 }
+
+model Student_Group_Association {
+    student_id String
+    group_id   String
+    group      Group   @relation(fields: [group_id], references: [group_id])
+    student    Student @relation(fields: [student_id], references: [registration_number])
+
+    @@id([student_id, group_id])
+    @@map("Student_Group_Association")
+}
+
+model Group_Teacher_Association {
+    teacher_id String
+    group_id   String
+    group      Group  @relation(fields: [group_id], references: [group_id])
+
+    @@id([teacher_id, group_id])
+    @@map("Group_Teacher_Association")
+}
+
+// Git logbook data
 
 model Git_logbook_entries {
-  project_id          String   @id
-  commit_id           String
-  commit_message      String
-  files_changed       Int
-  additions           Int
-  deletions           Int
-  difficulty_of_commit Int
-  commit_timestamp    DateTime
-  received_at         DateTime @default(now())
+    id                   String   @id @default(uuid())
+    project_id           String
+    commit_id            String   @unique
+    commit_message       String   @db.Text
+    files_changed        Int      @default(0)
+    difficulty_of_commit Int      @default(1)
+    commit_timestamp     DateTime
+    received_at          DateTime @default(now())
 
-  @@map("git_logbook_entries")
+    // Relations
+    project Project @relation(fields: [project_id], references: [project_id])
+
+    @@map("git_logbook_entries")
 }
 
-model Git_repository {
-  repo_id   String @id
-  repo_url  String
+// RBAC 
 
-  @@map("Git_repository")
+model Role {
+    id          String @id @default(cuid())
+    name        String
+    description String
+
+    teacher_roles    TeacherRole[]
+    role_permissions RolePermission[]
 }
 
-model Git_repo_project_association {
-  group_id String
-  repo_id  String
+model TeacherRole {
+    teacher_id     String
+    role_id        String
+    assigned_by_id String?
+    assigned_at    DateTime @default(now())
 
-  @@id([group_id, repo_id])
-  @@map("Git_repo_project_association")
+    teacher     Teacher  @relation(fields: [teacher_id], references: [id])
+    role        Role     @relation(fields: [role_id], references: [id])
+    assigned_by Teacher? @relation("AssignedBy", fields: [assigned_by_id], references: [id])
+
+    @@id([teacher_id, role_id])
 }
 
-model Student_TNP {
-  student_id    String   @id
-  name          String
-  email         String   @unique
-  cgpa          Float
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
-  
-  responses     DriveResponse[]
+model Permission {
+    id          String  @id @default(cuid())
+    name        String
+    description String?
 
-  @@map("Student_TNP")
+    role_permissions RolePermission[]
 }
 
-model CompanyDrive {
-  drive_id              String   @id @default(uuid())
-  company_name          String
-  min_cgpa              Float
-  registration_deadline DateTime
-  created_at            DateTime @default(now())
-  updated_at            DateTime @updatedAt
-  
-  responses             DriveResponse[]
+model RolePermission {
+    role_id       String
+    permission_id String
 
-  @@map("CompanyDrive")
+    role       Role       @relation(fields: [role_id], references: [id])
+    permission Permission @relation(fields: [permission_id], references: [id])
+
+    @@id([role_id, permission_id])
 }
 
-model DriveResponse {
-  response_id   String   @id @default(uuid())
-  student_id    String
-  drive_id      String
-  is_interested Boolean? @default(false)
-  responded_at  DateTime?
-  created_at    DateTime @default(now())
-  
-  email_token_hash     String?             
-  token_expires_at     DateTime?
-  notification_sent_at DateTime?
-
-  student       Student_TNP      @relation(fields: [student_id], references: [student_id])
-  drive         CompanyDrive @relation(fields: [drive_id], references: [drive_id])
-
-  @@unique([student_id, drive_id])
-  @@map("DriveResponse")
+enum Gender {
+    Male
+    Female
+    Other
 }
-

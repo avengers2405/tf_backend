@@ -3,6 +3,7 @@ import cors from "cors";
 import "dotenv/config";
 import webhookRoutes from "./routes/webhook.routes.js";
 import projectRoutes from "./routes/project-progress.routes.js";
+import resumeRoutes from "./routes/resume.routes.js";
 import { verifyGitHubSignature } from "./middleware/verifyGithub.js";
 import { createRequire } from "module";
 import { mongoose, prisma } from './db/index.js';
@@ -41,6 +42,8 @@ app.get('/email-action', (req, res) =>
 app.post('/drives', (req, res) =>
   driveController.createDrive(req, res)
 );
+
+app.use("/resume", resumeRoutes);
 
 app.listen(PORT, () => {
   console.log(`🚀 Enterprise Server running on port ${PORT}`);

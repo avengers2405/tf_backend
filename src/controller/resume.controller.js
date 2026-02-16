@@ -1,4 +1,10 @@
 import fileStorageService from "../services/fileStorageService.js";
+import { spawn } from "child_process";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Generates a random alphanumeric string of specified length
@@ -35,6 +41,33 @@ export const uploadResume = async (req, res) => {
 
     // Store the file using fileStorageService
     const filePath = await fileStorageService.storeFile(fileName, req.file.buffer);
+
+    // Run the analyze.js script with fileName as argument
+    const scriptPath = path.join(__dirname, '../services/resume/analyze.js');
+    
+    await new Promise((resolve, reject) => {
+      const nodeProcess = spawn('node', [scriptPath, fileName]);
+      
+      nodeProcess.stdout.on('data', (data) => {
+        console.log(`analyze.js output: ${data}`);
+      });
+      
+      nodeProcess.stderr.on('data', (data) => {
+        console.error(`analyze.js error: ${data}`);
+      });
+      
+      nodeProcess.on('close', (code) => {
+        if (code !== 0) {
+          reject(new Error(`analyze.js exited with code ${code}`));
+        } else {
+          resolve();
+        }
+      });
+      
+      nodeProcess.on('error', (error) => {
+        reject(error);
+      });
+    });
 
     return res.status(200).json({
       success: true,

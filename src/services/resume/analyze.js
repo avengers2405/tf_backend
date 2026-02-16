@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import { execSync } from "child_process";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import "dotenv/config";
+import fileStorageService from "../fileStorageService.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,8 +18,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 async function extractPIIFromResume() {
   try {
     // Read PDF file
-    const pdfPath = path.join(__dirname, "./data/" + pdf_path);
-    const pdfBuffer = fs.readFileSync(pdfPath);
+    const pdfBuffer = await fileStorageService.getFile(pdf_path);
     const base64Pdf = pdfBuffer.toString("base64");
 
     // Initialize Gemini model
@@ -39,7 +39,7 @@ async function extractPIIFromResume() {
     "leetcodeHandle": "handle or null",
     "linkedinProfile": "URL or null",
     "githubProfile": "URL or null",
-    "codechefProfile: "URL or null",
+    "codechefProfile": "URL or null",
     "stackoverflowProfile": "URL or null",
     "email": "email or null",
     "phone": "phone or null",

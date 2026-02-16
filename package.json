@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/avengers2405/tf_backend#readme",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@prisma/adapter-pg": "^7.2.0",
     "@prisma/client": "^7.4.0",
     "@sendgrid/mail": "^8.1.6",
@@ -39,6 +40,10 @@
     "@types/express": "^5.0.6",
     "prisma": "^7.4.0",
     "typescript": "^5.9.3"
+  },
+  "nodemonConfig": {
+    "ignore": ["*.json", "**/*.json"],
+    "ext": "js,mjs,cjs"
   },
   "description": ""
 }

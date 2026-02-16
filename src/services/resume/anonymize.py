@@ -1,7 +1,9 @@
 import fitz # PyMuPDF
-import pdfplumber
 import sys
 import json
+import os
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Parse command line arguments
 if len(sys.argv) > 1:
@@ -53,9 +55,13 @@ def redact_precise_strings(input_pdf, output_pdf, strings_to_redact):
         # This physically removes the text and images under the annotation
         page.apply_redactions()
 
+    # Create output directory if it doesn't exist
+    output_dir = os.path.dirname(output_pdf)
+    os.makedirs(output_dir, exist_ok=True)
+
     # Save the result. 'deflate=True' compresses the file.
     doc.save(output_pdf, garbage=4, deflate=True)
     doc.close()
     print(f"[SUCCESS] Redaction complete. Saved to: {output_pdf}")
 
-redact_precise_strings("data/"+pdf_path, "output/redacted_"+pdf_path, analysis_results)
+redact_precise_strings(os.path.join(current_dir, "../../../uploads/", pdf_path.strip('/')), os.path.join(current_dir, "../../../uploads/anonymized", pdf_path.strip('/resume')), analysis_results)

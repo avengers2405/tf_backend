@@ -9,8 +9,6 @@ import {  mongoose, prisma } from './db/index.js';
 import emailActionController from './controller/emailActionController.js';
 import driveController from './controller/driveController.js';
 
-
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -26,14 +24,6 @@ app.use("/webhook", express.json({
     }
 }));
 
-
-
-
-
-
-/* --------------------
-   ROUTE SETTLING
--------------------- */
 // All resume routes will now start with /api/resumes
 //app.use("/api/resumes", resumeRoutes); 
 

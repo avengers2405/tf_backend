@@ -273,6 +273,9 @@ model Git_logbook_entries {
     files_changed        Int      @default(0)
     difficulty_of_commit Int      @default(1)
     commit_timestamp     DateTime
+    pusher_name          String
+    is_anomaly           Boolean  @default(false)
+    anomaly_reason       String?
     received_at          DateTime @default(now())
 
     // Relations

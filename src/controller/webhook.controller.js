@@ -1,5 +1,5 @@
 import {prisma} from "../db/index.js"
-
+import analyzeInconsistency  from "../services/inconsistencyService.js";
 const prisma_ = prisma;
 // Extract project_id from commit message
 // Example: [PROJECT:101] Added login
@@ -8,13 +8,24 @@ function extractProjectId(message) {
     return match ? match[1] : null;
 }
 
-// Difficulty calculation
+// future scope : add weights based on files modified, like js, css, .json
 function calculateDifficulty(additions, deletions, filesChanged) {
-    const score = additions + deletions + filesChanged * 5;
+    // Define Weights
+    const W_ADD = 1.0;  // Baseline for new code
+    const W_DEL = 0.5;  // Deletions are effort, but usually less than creation
+    const W_FILE = 10.0; // High weight to reward architectural spread (context switching)
 
-    if (score < 20) return 0; // easy
-    if (score < 100) return 1; // medium
-    return 2; // hard
+    // 2. Calculate Weighted Effort
+    const weightedEffort = (additions * W_ADD) + (deletions * W_DEL) + (filesChanged * W_FILE);
+
+    // 3. Apply Natural Logarithm (The Damper)
+    // Math.log1p(x) computes ln(1 + x). 
+    // This handles the "1000 lines vs 100 lines" problem—the 1000th line 
+    // shouldn't increase difficulty as much as the 10th line did.
+    const score = Math.log1p(weightedEffort);
+
+    // Return as a float with 2 decimal places for the DB
+    return parseFloat(score.toFixed(2));
 }
 
 async function getCommitStats(owner, repo, commitSha) {
@@ -44,11 +55,26 @@ export const handleGitHubWebhook = async (req, res) => {
     const repoName = payload.repository.name;
     const owner = payload.repository.owner.name || payload.repository.owner.login;
 
+    const project_id = extractProjectId(payload.commits[0].message);
+    const ROLL_WINDOW = 7;
     try {
         // Map commits to an array of Promises
         console.log("Creating Promise for each commit...");
-        const commitPromises = payload.commits.map(async (commit) => {
-            const project_id = extractProjectId(commit.message);
+
+        //fetch last 7 cmmits.
+        //history is a dyna,ic array
+        const history = await prisma_.git_logbook_entries.findMany({
+            where: {
+                project_id: project_id,
+            },
+            orderBy: {
+                commit_timestamp: 'desc',
+            },
+            take: ROLL_WINDOW,
+        });
+        console.log(`Fetched ${history.length} historical entries for inconsistency analysis.`);
+        
+        for(const commit of payload.commits){
             
             if (!project_id) {
                 console.log(`Skipping commit ${commit.id}: No Project ID tag found.`);
@@ -61,6 +87,11 @@ export const handleGitHubWebhook = async (req, res) => {
             
             const difficulty = calculateDifficulty(additions, deletions, files_changed);
 
+            //calculate inconsistency for each commit. 
+            //implement a sliding window type approach where if length of array fetch exceeds then shift pointer to right and again cal mean and var. 
+            //after each consistency check insert the entry in db. 
+            const { is_anomaly, anomaly_reason } = analyzeInconsistency(commit, history);
+            console.log("IsAnomaly: ", is_anomaly, "Reason: ", anomaly_reason);
             return prisma_.git_logbook_entries.upsert({
                 where: { commit_id: commit.id },
                 update: {},
@@ -68,21 +99,16 @@ export const handleGitHubWebhook = async (req, res) => {
                     project_id: project_id,
                     commit_id: commit.id,
                     commit_message: commit.message,
+                    pusher_name: payload.pusher.name,
                     files_changed,
                     difficulty_of_commit: difficulty,
+                    is_anomaly: is_anomaly,
+                    anomaly_reason: anomaly_reason,
                     commit_timestamp: new Date(commit.timestamp),
                 },
             });
-        });
-
-        // Execute all database operations concurrently
-        const results = await Promise.all(commitPromises);
-        
-        // Filter out the nulls from skipped commits for the log
-        const successfulEntries = results.filter(entry => entry !== null);
-        
-        console.log(`Successfully processed ${successfulEntries.length} commits.`);
-        res.status(200).send(`Smart Logbook Updated: ${successfulEntries.length} entries added/verified.`);
+            
+        };
 
     } catch (err) {
         console.error("Critical Webhook Error:", err);
@@ -91,40 +117,6 @@ export const handleGitHubWebhook = async (req, res) => {
         res.status(500).send("Internal Server Error during processing");
     }
 }
-// async function checkInconsistency(newEntry, projectId) {
-//     // 1. Get average commits for this project from your DB/RAG
-//     const history = logbookMemory.filter(e => e.project_id === projectId);
-    
-//     if (history.length < 3) return null; // Not enough data for a baseline
-
-//     const avgAdditions = history.reduce((sum, e) => sum + e.additions, 0) / history.length;
-//     const lastCommitDate = new Date(history[history.length - 1].received_at);
-//     const timeGapDays = (new Date() - lastCommitDate) / (1000 * 60 * 60 * 24);
-
-//     let flagReason = null;
-
-//     // Logic: Sudden Massive Code Push after silence
-//     if (timeGapDays > 7 && newEntry.additions > (avgAdditions * 5)) {
-//         flagReason = "SUSPICIOUS_DUMP: Large code volume after 7+ days of inactivity.";
-//     }
-
-//     // Logic: Significant outlier in difficulty
-//     if (newEntry.difficulty_of_commit > 1 && avgAdditions < 20) {
-//         flagReason = "UNUSUAL_COMPLEXITY: Commit is significantly harder than group average.";
-//     }
-
-//     return flagReason;
-// }
-
-// // Inside your app.post("/webhook/git")
-// const flag = await checkInconsistency(entry, entry.project_id);
-// if (flag) {
-//     // Store flag in a 'notifications' table for the teacher
-//     console.warn(`[FLAG RAISED] Group ${entry.project_id}: ${flag}`);
-    
-//     // Optionally: Send a message into the chat as the AI Bot
-//     // await sendAiMessage(entry.project_id, `Note: I've noticed a large update. Let's discuss the progress in our next meeting.`);
-// }
 
 //work this through later. 
 // const authorizeChatAccess = (req, res, next) => {

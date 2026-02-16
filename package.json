@@ -33,7 +33,7 @@
     "mammoth": "^1.11.0",
     "mongoose": "^9.1.2",
     "multer": "^2.0.2",
-    "pdf-parse": "^2.4.5",
+    "pdf-parse": "^1.1.1",
     "pg": "^8.16.3"
   },
   "devDependencies": {
@@ -42,7 +42,10 @@
     "typescript": "^5.9.3"
   },
   "nodemonConfig": {
-    "ignore": ["*.json", "**/*.json"],
+    "ignore": [
+      "*.json",
+      "**/*.json"
+    ],
     "ext": "js,mjs,cjs"
   },
   "description": ""

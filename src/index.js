@@ -9,7 +9,7 @@ import { createRequire } from "module";
 import { mongoose, prisma } from './db/index.js';
 import emailActionController from './controller/emailActionController.js';
 import driveController from './controller/driveController.js';
-
+import resumeParserRoutes from "./routes/resumeParserRoutes.js";
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -43,6 +43,7 @@ app.post('/drives', (req, res) =>
   driveController.createDrive(req, res)
 );
 
+app.use("/resumeParser", resumeParserRoutes);
 app.use("/resume", resumeRoutes);
 
 app.listen(PORT, () => {

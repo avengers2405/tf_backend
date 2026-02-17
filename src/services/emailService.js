@@ -6,7 +6,24 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 class EmailService {
   constructor() {
     this.frontendUrl = process.env.FRONTEND_URL;
-    this.senderEmail = process.env.SENDER_EMAIL ;
+    this.senderEmail = process.env.SENDER_EMAIL;
+  }
+
+  async sendAuthMagicLinkEmail(payload) {
+    try {
+      const msg = {
+        to: payload.email,
+        from: this.senderEmail,
+        subject: 'Verify your account',
+        html: this.generateAuthMagicLinkTemplate(payload.magicLink),
+      };
+
+      await sgMail.send(msg);
+      return true;
+    } catch (error) {
+      console.error('Failed to send auth magic-link email:', error);
+      return false;
+    }
   }
 
   async sendConfirmationEmail(payload) {
@@ -85,6 +102,38 @@ class EmailService {
     </html>
   `;
 }
+
+  generateAuthMagicLinkTemplate(magicLink) {
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .button {
+              display: inline-block;
+              background-color: #0d6efd;
+              color: white;
+              padding: 12px 20px;
+              text-decoration: none;
+              border-radius: 6px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h2>Verify your account</h2>
+            <p>Click the button below to verify your account.</p>
+            <p><a href="${magicLink}" class="button">Verify Email</a></p>
+            <p>If the button does not work, use this link:</p>
+            <p><a href="${magicLink}">${magicLink}</a></p>
+            <p>If you did not request this, you can safely ignore this email.</p>
+          </div>
+        </body>
+      </html>
+    `;
+  }
 }
 
 export default new EmailService();

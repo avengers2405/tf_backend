@@ -4,14 +4,18 @@ import "dotenv/config";
 import webhookRoutes from "./routes/webhook.routes.js";
 import projectRoutes from "./routes/project-progress.routes.js";
 import resumeRoutes from "./routes/resume.routes.js";
+import authRoutes from './routes/auth.routes.js';
 import { verifyGitHubSignature } from "./middleware/verifyGithub.js";
 import { createRequire } from "module";
 import { mongoose, prisma } from './db/index.js';
 import emailActionController from './controller/emailActionController.js';
 import driveController from './controller/driveController.js';
+import { validateAuthConfig } from './config/authConfig.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+validateAuthConfig();
 
 // Middleware configuration
 app.use(cors());
@@ -34,6 +38,8 @@ app.use("/webhook", webhookRoutes);
 app.use("/project-progress", projectRoutes);
 
 app.use("/project-progress", projectRoutes);
+
+app.use('/auth', authRoutes);
 
 app.get('/email-action', (req, res) =>
   emailActionController.handleEmailConfirmation(req, res)

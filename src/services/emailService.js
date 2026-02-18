@@ -5,7 +5,7 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 class EmailService {
   constructor() {
-    this.frontendUrl = process.env.FRONTEND_URL;
+    this.frontendUrl = process.env.EMAIL_ACTION_FRONTEND_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
     this.senderEmail = process.env.SENDER_EMAIL;
   }
 

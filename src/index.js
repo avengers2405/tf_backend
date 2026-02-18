@@ -45,6 +45,10 @@ app.get('/email-action', (req, res) =>
   emailActionController.handleEmailConfirmation(req, res)
 );
 
+app.get('/drives/confirm-interest', (req, res) =>
+  emailActionController.verifyEmailConfirmation(req, res)
+);
+
 app.post('/drives', (req, res) =>
   driveController.createDrive(req, res)
 );

@@ -11,9 +11,9 @@ import emailActionController from './controller/emailActionController.js';
 import driveController from './controller/driveController.js';
 import resumeParserRoutes from "./routes/resumeParserRoutes.js";
 import { validateAuthConfig } from './config/authConfig.js';
-import projectOpportunity from "./routes/project-opportunity.routes.js";
 import studentRoutes from "./routes/student.routes.js";
 import teamBuilderRoutes from "./routes/team-builder.routes.js";
+import postOpportunity  from "./controller/post-opportunity.routes.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -46,11 +46,13 @@ app.use("/project-progress", projectRoutes);
 
 app.use('/auth', authRoutes);
 
-app.use("/api/projects", projectOpportunity);
+app.use("/api/projects", projectRoutes);
 
 app.use("/api/team-builder", teamBuilderRoutes);
 
 app.use("/api", studentRoutes);
+
+app.use("/post-opportunity", postOpportunity);
 
 app.get('/email-action', (req, res) =>
   emailActionController.handleEmailConfirmation(req, res)

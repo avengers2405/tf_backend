@@ -8,6 +8,7 @@ import authRoutes from './routes/auth.routes.js';
 import { verifyGitHubSignature } from "./middleware/verifyGithub.js";
 import emailActionController from './controller/emailActionController.js';
 import driveController from './controller/driveController.js';
+import resumeParserRoutes from "./routes/resumeParserRoutes.js";
 import { validateAuthConfig } from './config/authConfig.js';
 import projectOpportunity from "./routes/project-opportunity.routes.js";
 import studentRoutes from "./routes/student.routes.js";
@@ -58,6 +59,7 @@ app.post('/drives', (req, res) =>
   driveController.createDrive(req, res)
 );
 
+app.use("/resumeParser", resumeParserRoutes);
 app.use("/resume", resumeRoutes);
 
 app.listen(PORT, () => {

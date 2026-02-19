@@ -4,14 +4,20 @@ import "dotenv/config";
 import webhookRoutes from "./routes/webhook.routes.js";
 import projectRoutes from "./routes/project-progress.routes.js";
 import resumeRoutes from "./routes/resume.routes.js";
+import authRoutes from './routes/auth.routes.js';
 import { verifyGitHubSignature } from "./middleware/verifyGithub.js";
-import { createRequire } from "module";
-import { mongoose, prisma } from './db/index.js';
 import emailActionController from './controller/emailActionController.js';
 import driveController from './controller/driveController.js';
 import resumeParserRoutes from "./routes/resumeParserRoutes.js";
+import { validateAuthConfig } from './config/authConfig.js';
+import projectOpportunity from "./routes/project-opportunity.routes.js";
+import studentRoutes from "./routes/student.routes.js";
+import teamBuilderRoutes from "./routes/team-builder.routes.js";
+
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+validateAuthConfig();
 
 // Middleware configuration
 app.use(cors());
@@ -33,10 +39,20 @@ app.use("/webhook", webhookRoutes);
 
 app.use("/project-progress", projectRoutes);
 
-app.use("/project-progress", projectRoutes);
+app.use('/auth', authRoutes);
+
+app.use("/api/projects", projectOpportunity);
+
+app.use("/api/team-builder", teamBuilderRoutes);
+
+app.use("/api", studentRoutes);
 
 app.get('/email-action', (req, res) =>
   emailActionController.handleEmailConfirmation(req, res)
+);
+
+app.get('/drives/confirm-interest', (req, res) =>
+  emailActionController.verifyEmailConfirmation(req, res)
 );
 
 app.post('/drives', (req, res) =>

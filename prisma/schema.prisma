@@ -11,12 +11,43 @@ datasource db {
 model User {
     id         String   @id @default(cuid())
     username   String   @unique
+    email      String   @unique
     password   String // would contain hashed value
+    is_verified Boolean  @default(false)
     created_at DateTime @default(now())
     updated_at DateTime @updatedAt
 
-    student Student?
-    teacher Teacher?
+    student           Student?
+    teacher           Teacher?
+    auth_magic_tokens Auth_Magic_Token[]
+    auth_sessions     Auth_Session[]
+}
+
+model Auth_Magic_Token {
+    id         String   @id @default(cuid())
+    user_id    String
+    token_hash String   @unique
+    jti        String   @unique
+    expires_at DateTime
+    used_at    DateTime?
+    created_at DateTime @default(now())
+
+    user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+}
+
+model Auth_Session {
+    id                 String   @id @default(cuid())
+    user_id            String
+    refresh_token_hash String   @unique
+    jti                String   @unique
+    expires_at         DateTime
+    revoked_at         DateTime?
+    created_at         DateTime @default(now())
+    updated_at         DateTime @updatedAt
+
+    user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
 }
 
 model Student {
@@ -107,6 +138,7 @@ model Teacher {
     user                   User          @relation(fields: [user_id], references: [id])
     teacher_roles          TeacherRole[]
     assigned_teacher_roles TeacherRole[] @relation("AssignedBy")
+    supervised_projects Project[]
 }
 
 // Defining skills, will be associated with students, projects, etc.
@@ -184,12 +216,16 @@ model Notifications {
 
 // All projects
 model Project {
-    project_id       String  @id @default(uuid())
+    project_id       Int          @id @default(autoincrement())
     title            String
-    description      String  @db.Text
+    description      String   @db.Text
     technology_stack String
     academic_year    String
-    repo_url         String? @unique
+    repo_url         String?  @unique
+
+    // Simplified: Just point to the Teacher's ID
+    supervisor_id    String?
+    supervisor       Teacher? @relation(fields: [supervisor_id], references: [id])
 
     current_phase_id Int?
     phases           Project_Phase[]
@@ -198,10 +234,22 @@ model Project {
 
     @@map("Project")
 }
+model TeacherRole {
+    teacher_id     String
+    role_id        String
+    assigned_by_id String?
+    assigned_at    DateTime @default(now())
+
+    teacher     Teacher  @relation(fields: [teacher_id], references: [id])
+    role        Role     @relation(fields: [role_id], references: [id])
+    assigned_by Teacher? @relation("AssignedBy", fields: [assigned_by_id], references: [id])
+    
+    @@id([teacher_id, role_id])
+}
 
 // composed of student, teacher
 model Group {
-    group_id   String  @id @default(uuid())
+    group_id Int     @id @default(autoincrement())
     group_name String? // Added for better identification
 
     // Relations
@@ -213,8 +261,8 @@ model Group {
 }
 
 model Project_Group_Association {
-    project_id String
-    group_id   String
+    group_id   Int
+    project_id Int
     project    Project @relation(fields: [project_id], references: [project_id])
     group      Group   @relation(fields: [group_id], references: [group_id])
 
@@ -224,7 +272,7 @@ model Project_Group_Association {
 
 model Project_Phase {
     phase_id          Int          @default(autoincrement())
-    project_id        String
+    project_id        Int
     phase_name        String
     phase_description String       @db.Text
     start_date        DateTime     @db.Date
@@ -246,7 +294,7 @@ enum Phase_Status {
 
 model Student_Group_Association {
     student_id String
-    group_id   String
+    group_id   Int
     group      Group   @relation(fields: [group_id], references: [group_id])
     student    Student @relation(fields: [student_id], references: [registration_number])
 
@@ -256,7 +304,7 @@ model Student_Group_Association {
 
 model Group_Teacher_Association {
     teacher_id String
-    group_id   String
+    group_id   Int
     group      Group  @relation(fields: [group_id], references: [group_id])
 
     @@id([teacher_id, group_id])
@@ -267,7 +315,7 @@ model Group_Teacher_Association {
 
 model Git_logbook_entries {
     id                   String   @id @default(uuid())
-    project_id           String
+    project_id           Int
     commit_id            String   @unique
     commit_message       String   @db.Text
     files_changed        Int      @default(0)
@@ -295,18 +343,6 @@ model Role {
     role_permissions RolePermission[]
 }
 
-model TeacherRole {
-    teacher_id     String
-    role_id        String
-    assigned_by_id String?
-    assigned_at    DateTime @default(now())
-
-    teacher     Teacher  @relation(fields: [teacher_id], references: [id])
-    role        Role     @relation(fields: [role_id], references: [id])
-    assigned_by Teacher? @relation("AssignedBy", fields: [assigned_by_id], references: [id])
-
-    @@id([teacher_id, role_id])
-}
 
 model Permission {
     id          String  @id @default(cuid())

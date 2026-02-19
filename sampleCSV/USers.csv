@@ -1,0 +1,6 @@
+id,username,email,password,is_verified,created_at,updated_at
+user_01,prof_alice,alice@college.edu,hashed_pw_1,true,2026-01-01,2026-01-01
+user_02,student_bob,bob@student.edu,hashed_pw_2,true,2026-01-01,2026-01-01
+user_03,student_charlie,charlie@student.edu,hashed_pw_3,true,2026-01-01,2026-01-01
+user_04,prof_dave,dave@college.edu,hashed_pw_4,true,2026-02-18,2026-02-18
+user_05,student_eve,eve@student.edu,hashed_pw_5,true,2026-02-18,2026-02-18

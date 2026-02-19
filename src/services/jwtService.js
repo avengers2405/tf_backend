@@ -1,9 +1,10 @@
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import authConfig from '../config/authConfig.js';
 
 class JwtService {
   constructor() {
-    this.secret = process.env.JWT_SECRET;
+    this.secret = authConfig.jwtSecret;
   }
 
   generateToken(student_id, drive_id, expiresAt) {
@@ -29,6 +30,22 @@ class JwtService {
       return decoded;
     } catch (error) {
       console.error('Token verification failed:', error);
+      return null;
+    }
+  }
+
+  generateAuthToken(payload, expiresIn) {
+    return jwt.sign(
+      { ...payload, jti: crypto.randomUUID() },
+      this.secret,
+      { expiresIn }
+    );
+  }
+
+  verifyAuthToken(token) {
+    try {
+      return jwt.verify(token, this.secret);
+    } catch (error) {
       return null;
     }
   }

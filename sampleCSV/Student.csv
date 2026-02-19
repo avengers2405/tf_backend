@@ -1,0 +1,4 @@
+registration_number,user_id,first_name,last_name,primary_email,cgpa,date_of_birth,department,batch,created_at,updated_at
+REG2026001,user_02,Bob,Johnson,bob@student.edu,8.5,2004-05-12,CS,2026,2026-01-01 10:00:00,2026-01-01 10:00:00
+REG2026002,user_03,Charlie,Brown,charlie@student.edu,7.8,2004-09-20,CS,2026,2026-01-01 10:00:00,2026-01-01 10:00:00
+REG2026003,user_05,Eve,Adams,eve@student.edu,9.2,2005-01-15,IT,2027,2026-02-18 22:45:00,2026-02-18 22:45:00

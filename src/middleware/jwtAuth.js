@@ -1,10 +1,13 @@
 import jwtService from '../services/jwtService.js';
+import authConfig from '../config/authConfig.js';
 
 const jwtAuth = (req, res, next) => {
+    const cookieToken = req.cookies?.[authConfig.accessCookieName];
     const authorization = req.headers.authorization || '';
-    const [scheme, token] = authorization.split(' ');
+    const [scheme, bearerToken] = authorization.split(' ');
+    const token = cookieToken || (scheme === 'Bearer' ? bearerToken : null);
 
-    if (scheme !== 'Bearer' || !token) {
+    if (!token) {
         res.status(401).json({ error: 'missing access token' });
         return;
     }

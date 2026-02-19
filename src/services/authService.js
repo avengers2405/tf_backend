@@ -114,6 +114,60 @@ class AuthService {
     return user;
   }
 
+  async resolveUserRole(userId) {
+    if (!userId) {
+      return 'student';
+    }
+
+    const student = await prisma.student.findUnique({
+      where: {
+        user_id: userId,
+      },
+      select: {
+        user_id: true,
+      },
+    });
+
+    if (student) {
+      return 'student';
+    }
+
+    const teacher = await prisma.teacher.findUnique({
+      where: {
+        user_id: userId,
+      },
+      include: {
+        teacher_roles: {
+          include: {
+            role: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!teacher) {
+      return 'student';
+    }
+
+    const roleNames = teacher.teacher_roles
+      .map((assignment) => assignment.role?.name?.toLowerCase?.())
+      .filter(Boolean);
+
+    if (roleNames.some((name) => name.includes('recruit'))) {
+      return 'recruiter';
+    }
+
+    if (roleNames.some((name) => name.includes('tnp') || name.includes('placement'))) {
+      return 'tnp';
+    }
+
+    return 'teacher';
+  }
+
   async findUserEmailById(userId) {
     if (!userId) {
       return null;

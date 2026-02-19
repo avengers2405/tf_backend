@@ -3,6 +3,55 @@ import authConfig from '../config/authConfig.js';
 import prisma from '../db/prisma.js';
 import emailService from '../services/emailService.js';
 
+function setSessionCookies(res, accessToken, refreshToken, role) {
+  res.cookie(
+    authConfig.accessCookieName,
+    accessToken,
+    authConfig.getAccessCookieOptions()
+  );
+
+  res.cookie(
+    authConfig.refreshCookieName,
+    refreshToken,
+    authConfig.getRefreshCookieOptions()
+  );
+
+  if (role) {
+    res.cookie(
+      authConfig.roleCookieName,
+      role,
+      authConfig.getRoleCookieOptions()
+    );
+  }
+}
+
+function clearSessionCookies(res) {
+  res.clearCookie(authConfig.accessCookieName, {
+    path: '/',
+    httpOnly: true,
+    secure: authConfig.isProduction,
+    sameSite: authConfig.cookieSameSite,
+  });
+
+  res.clearCookie(authConfig.refreshCookieName, {
+    path: '/',
+    httpOnly: true,
+    secure: authConfig.isProduction,
+    sameSite: authConfig.cookieSameSite,
+  });
+
+  res.clearCookie(authConfig.roleCookieName, {
+    path: '/',
+    httpOnly: true,
+    secure: authConfig.isProduction,
+    sameSite: authConfig.cookieSameSite,
+  });
+}
+
+function getRefreshTokenFromRequest(req) {
+  return req.cookies?.[authConfig.refreshCookieName] || req.body?.refresh_token || null;
+}
+
 class AuthController {
   async register(req, res) {
     try {
@@ -131,6 +180,9 @@ class AuthController {
       }
 
       const tokens = await authService.issueSessionTokens(verifiedUser.id);
+      const role = await authService.resolveUserRole(verifiedUser.id);
+
+      setSessionCookies(res, tokens.accessToken, tokens.refreshToken, role);
 
       res.status(200).json({
         message: 'email verification successful',
@@ -139,6 +191,7 @@ class AuthController {
           username: verifiedUser.username,
           email: verifiedUser.email,
           is_verified: verifiedUser.is_verified,
+          role,
         },
         access_token: tokens.accessToken,
         refresh_token: tokens.refreshToken,
@@ -171,6 +224,9 @@ class AuthController {
       }
 
       const tokens = await authService.issueSessionTokens(user.id);
+      const role = await authService.resolveUserRole(user.id);
+
+      setSessionCookies(res, tokens.accessToken, tokens.refreshToken, role);
 
       res.status(200).json({
         message: 'login successful',
@@ -179,6 +235,7 @@ class AuthController {
           username: user.username,
           email: user.email,
           is_verified: user.is_verified,
+          role,
         },
         access_token: tokens.accessToken,
         refresh_token: tokens.refreshToken,
@@ -191,7 +248,7 @@ class AuthController {
 
   async refresh(req, res) {
     try {
-      const { refresh_token } = req.body;
+      const refresh_token = getRefreshTokenFromRequest(req);
 
       if (!refresh_token) {
         res.status(400).json({ error: 'refresh_token is required' });
@@ -204,6 +261,8 @@ class AuthController {
         res.status(401).json({ error: 'invalid or expired refresh token' });
         return;
       }
+
+      setSessionCookies(res, rotated.accessToken, rotated.refreshToken);
 
       res.status(200).json({
         message: 'token refreshed',
@@ -218,14 +277,13 @@ class AuthController {
 
   async logout(req, res) {
     try {
-      const { refresh_token } = req.body;
+      const refresh_token = getRefreshTokenFromRequest(req);
 
-      if (!refresh_token) {
-        res.status(400).json({ error: 'refresh_token is required' });
-        return;
+      if (refresh_token) {
+        await authService.revokeRefreshToken(refresh_token);
       }
 
-      await authService.revokeRefreshToken(refresh_token);
+      clearSessionCookies(res);
 
       res.status(200).json({ message: 'logout successful' });
     } catch (error) {
@@ -249,12 +307,15 @@ class AuthController {
         return;
       }
 
+      const role = await authService.resolveUserRole(user.id);
+
       res.status(200).json({
         user: {
           id: user.id,
           username: user.username,
           email: user.email,
           is_verified: user.is_verified,
+          role,
         },
       });
     } catch (error) {

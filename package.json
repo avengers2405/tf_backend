@@ -26,6 +26,7 @@
     "@prisma/client": "^7.4.0",
     "@sendgrid/mail": "^8.1.6",
     "body-parser": "^2.2.2",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",

@@ -5,6 +5,7 @@ import { execSync } from "child_process";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import "dotenv/config";
 import fileStorageService from "../fileStorageService.js";
+import { getGeminiApiKey } from "../gemini-token.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,7 +14,7 @@ const __dirname = path.dirname(__filename);
 const pdf_path = process.argv[2] || "resume.pdf";
 
 // console.log("🚀 ~ env.GEMINI_API_KEY:", process.env.GEMINI_API_KEY)
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const genAI = new GoogleGenerativeAI(getGeminiApiKey());
 
 async function extractPIIFromResume() {
   try {

@@ -13,7 +13,7 @@ import resumeParserRoutes from "./routes/resumeParserRoutes.js";
 import { validateAuthConfig } from './config/authConfig.js';
 import studentRoutes from "./routes/student.routes.js";
 import teamBuilderRoutes from "./routes/team-builder.routes.js";
-import postOpportunity  from "./controller/post-opportunity.routes.js";
+import postOpportunity from "./routes/post-opportunity.routes.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -51,6 +51,8 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/team-builder", teamBuilderRoutes);
 
 app.use("/api", studentRoutes);
+
+app.use("/post-opportunity", postOpportunity);
 
 app.use("/post-opportunity", postOpportunity);
 

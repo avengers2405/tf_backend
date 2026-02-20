@@ -7,6 +7,14 @@ const SCRYPT_KEYLEN = 64;
 const PASSWORD_SCHEME = 'scrypt';
 
 class AuthService {
+  getTnpDelegate() {
+    return prisma.tnp ?? null;
+  }
+
+  getRecruiterDelegate() {
+    return prisma.recruiter ?? null;
+  }
+
   hashPassword(password) {
     const normalized = this.normalizeSecret(password);
     const salt = crypto.randomBytes(16).toString('hex');
@@ -89,7 +97,39 @@ class AuthService {
         },
       });
 
-      return teacher?.user ?? null;
+      if (teacher?.user) {
+        return teacher.user;
+      }
+
+      const tnpDelegate = this.getTnpDelegate();
+      const tnp = tnpDelegate
+        ? await tnpDelegate.findUnique({
+            where: {
+              email: normalized,
+            },
+            include: {
+              user: true,
+            },
+          })
+        : null;
+
+      if (tnp?.user) {
+        return tnp.user;
+      }
+
+      const recruiterDelegate = this.getRecruiterDelegate();
+      const recruiter = recruiterDelegate
+        ? await recruiterDelegate.findUnique({
+            where: {
+              email: normalized,
+            },
+            include: {
+              user: true,
+            },
+          })
+        : null;
+
+      return recruiter?.user ?? null;
     }
 
     return prisma.user.findUnique({
@@ -132,11 +172,49 @@ class AuthService {
       return 'student';
     }
 
+    const tnpDelegate = this.getTnpDelegate();
+    const tnpProfile = tnpDelegate
+      ? await tnpDelegate.findUnique({
+          where: {
+            user_id: userId,
+          },
+          select: {
+            user_id: true,
+          },
+        })
+      : null;
+
+    if (tnpProfile) {
+      return 'tnp';
+    }
+
+    const recruiterDelegate = this.getRecruiterDelegate();
+    const recruiterProfile = recruiterDelegate
+      ? await recruiterDelegate.findUnique({
+          where: {
+            user_id: userId,
+          },
+          select: {
+            user_id: true,
+          },
+        })
+      : null;
+
+    if (recruiterProfile) {
+      return 'recruiter';
+    }
+
     const teacher = await prisma.teacher.findUnique({
       where: {
         user_id: userId,
       },
       include: {
+        user: {
+          select: {
+            username: true,
+            email: true,
+          },
+        },
         teacher_roles: {
           include: {
             role: {
@@ -157,11 +235,31 @@ class AuthService {
       .map((assignment) => assignment.role?.name?.toLowerCase?.())
       .filter(Boolean);
 
-    if (roleNames.some((name) => name.includes('recruit'))) {
+    const normalizedRoleNames = roleNames.map((name) => name.replace(/[\s_-]+/g, ''));
+
+    if (normalizedRoleNames.some((name) => name.includes('recruit'))) {
       return 'recruiter';
     }
 
-    if (roleNames.some((name) => name.includes('tnp') || name.includes('placement'))) {
+    if (normalizedRoleNames.some((name) => name.includes('tnp') || name.includes('placement') || name.includes('trainingandplacement'))) {
+      return 'tnp';
+    }
+
+    const departmentHint = String(teacher.department ?? '').toLowerCase().replace(/[\s_-]+/g, '');
+    const usernameHint = String(teacher.user?.username ?? '').toLowerCase().replace(/[\s_-]+/g, '');
+    const emailHint = String(teacher.user?.email ?? teacher.email ?? '').toLowerCase();
+
+    if (
+      departmentHint.includes('tnp') ||
+      departmentHint.includes('tpo') ||
+      departmentHint.includes('placement') ||
+      departmentHint.includes('training') ||
+      usernameHint.includes('tnp') ||
+      usernameHint.includes('tpo') ||
+      emailHint.includes('tnp') ||
+      emailHint.includes('tpo') ||
+      emailHint.includes('placement')
+    ) {
       return 'tnp';
     }
 
@@ -210,7 +308,39 @@ class AuthService {
       },
     });
 
-    return teacher?.email ?? null;
+    if (teacher?.email) {
+      return teacher.email;
+    }
+
+    const tnpDelegate = this.getTnpDelegate();
+    const tnp = tnpDelegate
+      ? await tnpDelegate.findUnique({
+          where: {
+            user_id: userId,
+          },
+          select: {
+            email: true,
+          },
+        })
+      : null;
+
+    if (tnp?.email) {
+      return tnp.email;
+    }
+
+    const recruiterDelegate = this.getRecruiterDelegate();
+    const recruiter = recruiterDelegate
+      ? await recruiterDelegate.findUnique({
+          where: {
+            user_id: userId,
+          },
+          select: {
+            email: true,
+          },
+        })
+      : null;
+
+    return recruiter?.email ?? null;
   }
 
   async issueMagicLinkToken(userId) {
@@ -399,6 +529,7 @@ class AuthService {
     return {
       accessToken: nextAccessToken,
       refreshToken: nextRefreshToken,
+      userId: payload.sub,
     };
   }
 

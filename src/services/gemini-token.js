@@ -1,4 +1,5 @@
 import "dotenv/config";
+import logger from "./logger.js";
 
 // Count available keys in .env
 function countAvailableKeys() {
@@ -30,7 +31,7 @@ export function getGeminiApiKey() {
   
   const apiKey = process.env[`GEMINI_API_KEY_${keyIndex}`];
   
-  console.log(`Using GEMINI_API_KEY_${keyIndex}, Queue: [${keyQueue.join(', ')}]`);
+  logger.log(`Using GEMINI_API_KEY_${keyIndex}, Queue: [${keyQueue.join(', ')}]`);
   
   return apiKey;
 }

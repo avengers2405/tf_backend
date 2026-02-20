@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import logger from "../services/logger.js";
 
 export const verifyGitHubSignature = (req, res, buf) => {
   const signature = req.headers["x-hub-signature-256"];
@@ -11,5 +12,5 @@ export const verifyGitHubSignature = (req, res, buf) => {
   if (signature !== digest) {
     throw new Error("Invalid GitHub webhook signature");
   }
-  console.log("GitHub webhook signature verified");
+  logger.log("GitHub webhook signature verified");
 };

@@ -1,5 +1,6 @@
 import { prisma } from "../db/index.js"
 import analyzeInconsistency from "../services/inconsistencyService.js";
+import logger from "../services/logger.js";
 const prisma_ = prisma;
 // Extract project_id from commit message
 // Example: [PROJECT:101] Added login
@@ -48,7 +49,7 @@ async function getCommitStats(owner, repo, commitSha) {
 
 export const handleGitHubWebhook = async (req, res) => {
   const payload = req.body;
-  console.log("Received webhook payload:", payload);
+  logger.log("Received webhook payload:", payload);
   if (!payload.commits || !payload.repository) {
     return res.status(400).send("Invalid payload");
   }
@@ -59,7 +60,7 @@ export const handleGitHubWebhook = async (req, res) => {
   const ROLL_WINDOW = 7;
   try {
     // Map commits to an array of Promises
-    console.log("Creating Promise for each commit...");
+    logger.log("Creating Promise for each commit...");
 
     //fetch last 7 cmmits.
     //history is a dyna,ic array
@@ -72,12 +73,12 @@ export const handleGitHubWebhook = async (req, res) => {
       },
       take: ROLL_WINDOW,
     });
-    console.log(`Fetched ${history.length} historical entries for inconsistency analysis.`);
+    logger.log(`Fetched ${history.length} historical entries for inconsistency analysis.`);
 
     for (const commit of payload.commits) {
 
       if (!project_id) {
-        console.log(`Skipping commit ${commit.id}: No Project ID tag found.`);
+        logger.log(`Skipping commit ${commit.id}: No Project ID tag found.`);
         return null;
       }
 
@@ -91,7 +92,7 @@ export const handleGitHubWebhook = async (req, res) => {
       //implement a sliding window type approach where if length of array fetch exceeds then shift pointer to right and again cal mean and var. 
       //after each consistency check insert the entry in db. 
       const { is_anomaly, anomaly_reason } = analyzeInconsistency(commit, history);
-      console.log("IsAnomaly: ", is_anomaly, "Reason: ", anomaly_reason);
+      logger.log("IsAnomaly: ", is_anomaly, "Reason: ", anomaly_reason);
       return prisma_.git_logbook_entries.upsert({
         where: { commit_id: commit.id },
         update: {},

@@ -367,3 +367,14 @@ enum Gender {
     Female
     Other
 }
+
+model Logs {
+    id         String   @id @default(cuid())
+    created_at DateTime @default(now())
+    identifier String? // Custom tag for searching logs
+    type       String   @default("INFO") // Log type (INFO, ERROR, WARNING, etc.)
+    source     String? // Source of the log
+    data       Json // Log payload (string or JSON object)
+
+    @@map("Logs")
+}

@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import jwtService from './jwtService.js';
 import emailService from './emailService.js';
+import logger from "./logger.js";
 
 import prisma from '../db/prisma.js';
 
@@ -39,7 +40,7 @@ class DriveService {
       where: { cgpa: { gte: min_cgpa } }
     });
 
-    console.log(`Found ${eligibleStudents.length} eligible students`);
+    logger.log(`Found ${eligibleStudents.length} eligible students`);
 
     for (const student of eligibleStudents) {
       try {

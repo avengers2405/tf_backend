@@ -15,7 +15,7 @@ const jwtAuth = (req, res, next) => {
     const payload = jwtService.verifyAuthToken(token);
 
     if (!payload || payload.type !== 'access' || !payload.sub) {
-        res.status(401).json({ error: 'invalid access token' });
+        res.status(401).json({ error: 'invalid access token', payload });
         return;
     }
 

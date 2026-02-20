@@ -1,6 +1,8 @@
+import logger from "./logger.js";
+
 function analyzeInconsistency(currentEntry, history) {
 
-  console.log("Entered Inconsistency Analysis");
+  logger.log("Entered Inconsistency Analysis");
   if (history.length < 3) {
     return { is_anomaly: false, anomaly_reason: 'Not enough history to analyze progress.' };
   }

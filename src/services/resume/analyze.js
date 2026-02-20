@@ -6,6 +6,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import "dotenv/config";
 import fileStorageService from "../fileStorageService.js";
 import { getGeminiApiKey } from "../gemini-token.js";
+import logger from "../logger.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -69,8 +70,8 @@ Important: For names, include EVERY variation found in the resume, preserving ex
       }
     }
 
-    console.log("\nAll PII values in array:");
-    console.log(allValues);
+    logger.log("\nAll PII values in array:");
+    logger.log(allValues);
 
     // console.log("Extracted PII from Resume:");
     // console.log(JSON.stringify(piiData, null, 2));
@@ -85,7 +86,7 @@ Important: For names, include EVERY variation found in the resume, preserving ex
         encoding: 'utf-8',
         cwd: __dirname
       });
-      console.log(result);
+      logger.log(result);
       // Clean up temp file
       fs.unlinkSync(tempDataFile);
     } catch (err) {

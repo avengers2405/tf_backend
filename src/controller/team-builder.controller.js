@@ -1,8 +1,9 @@
 import { prisma } from "../db/index.js";
+import logger from "../services/logger.js";
 
 export const createTeam = async (req, res) => {
   try {
-    console.log("Entered create grp");
+    logger.log("Entered create grp");
     const { group_name, student_ids, creator_user_id } = req.body;
 
     if (!group_name || !student_ids || !creator_user_id) {
@@ -10,7 +11,7 @@ export const createTeam = async (req, res) => {
     }
 
     // 1. Fetch the registration_number for the creator
-    console.log("Fetching creator student reg");
+    logger.log("Fetching creator student reg");
     const creatorStudent = await prisma.student.findUnique({
       where: { user_id: creator_user_id },
       select: { registration_number: true }
@@ -24,7 +25,7 @@ export const createTeam = async (req, res) => {
     const uniqueStudentRegNos = [...new Set([...student_ids, creatorRegNo])];
 
     // 2. Run Transaction using Prisma's auto-incrementing ID
-    console.log("Starting transaction");
+    logger.log("Starting transaction");
     const newGroup = await prisma.$transaction(async (tx) => {
       // Create the group (Prisma/DB generates the ID here)
       const group = await tx.group.create({
@@ -32,7 +33,7 @@ export const createTeam = async (req, res) => {
       });
 
       // Prepare associations using the newly generated group.group_id
-      console.log("Running assocaition");
+      logger.log("Running assocaition");
       const associations = uniqueStudentRegNos.map((regNo) => ({
         student_id: regNo,
         group_id: group.group_id, 

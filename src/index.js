@@ -6,6 +6,7 @@ import webhookRoutes from "./routes/webhook.routes.js";
 import projectRoutes from "./routes/project-progress.routes.js";
 import resumeRoutes from "./routes/resume.routes.js";
 import authRoutes from './routes/auth.routes.js';
+import logsRoutes from "./routes/logs.routes.js";
 import { verifyGitHubSignature } from "./middleware/verifyGithub.js";
 import emailActionController from './controller/emailActionController.js';
 import driveController from './controller/driveController.js';
@@ -14,6 +15,7 @@ import { validateAuthConfig } from './config/authConfig.js';
 import projectOpportunity from "./routes/project-opportunity.routes.js";
 import studentRoutes from "./routes/student.routes.js";
 import teamBuilderRoutes from "./routes/team-builder.routes.js";
+import logger from "./services/logger.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -67,7 +69,9 @@ app.post('/drives', (req, res) =>
 app.use("/resumeParser", resumeParserRoutes);
 app.use("/resume", resumeRoutes);
 
+app.use("/logs", logsRoutes);
+
 app.listen(PORT, () => {
-  console.log(`🚀 Enterprise Server running on port ${PORT}`);
+  logger.log(`🚀 Enterprise Server running on port ${PORT}`);
 });
 

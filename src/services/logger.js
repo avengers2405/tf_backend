@@ -31,11 +31,25 @@ class Logger {
 	}
 
 	/**
+	 * Sanitize arguments for JSON storage (convert undefined to null)
+	 * @private
+	 */
+	_sanitizeArgs(args) {
+		return args.map(arg => arg === undefined ? null : arg);
+	}
+
+	/**
 	 * Convert arguments to string representation for DB storage
 	 * @private
 	 */
 	_argsToString(args) {
 		return args.map(arg => {
+			if (arg === undefined) {
+				return 'undefined';
+			}
+			if (arg === null) {
+				return 'null';
+			}
 			if (typeof arg === 'object') {
 				try {
 					return JSON.stringify(arg);
@@ -68,9 +82,10 @@ class Logger {
 
 			// Prepare data for DB storage
 			const concatenatedString = this._argsToString(dataArgs);
+			const sanitizedArgs = this._sanitizeArgs(dataArgs);
 			const logData = {
 				message: concatenatedString,
-				args: dataArgs
+				args: sanitizedArgs
 			};
 
 			// Create log entry in database
@@ -103,9 +118,10 @@ class Logger {
 		console.log(...dataArgs);
 		
 		const concatenatedString = this._argsToString(dataArgs);
+		const sanitizedArgs = this._sanitizeArgs(dataArgs);
 		const logData = {
 			message: concatenatedString,
-			args: dataArgs
+			args: sanitizedArgs
 		};
 
 		return await prisma.logs.create({
@@ -129,9 +145,10 @@ class Logger {
 		console.error(...dataArgs);
 		
 		const concatenatedString = this._argsToString(dataArgs);
+		const sanitizedArgs = this._sanitizeArgs(dataArgs);
 		const logData = {
 			message: concatenatedString,
-			args: dataArgs
+			args: sanitizedArgs
 		};
 
 		return await prisma.logs.create({
@@ -155,9 +172,10 @@ class Logger {
 		console.warn(...dataArgs);
 		
 		const concatenatedString = this._argsToString(dataArgs);
+		const sanitizedArgs = this._sanitizeArgs(dataArgs);
 		const logData = {
 			message: concatenatedString,
-			args: dataArgs
+			args: sanitizedArgs
 		};
 
 		return await prisma.logs.create({
@@ -181,9 +199,10 @@ class Logger {
 		console.debug(...dataArgs);
 		
 		const concatenatedString = this._argsToString(dataArgs);
+		const sanitizedArgs = this._sanitizeArgs(dataArgs);
 		const logData = {
 			message: concatenatedString,
-			args: dataArgs
+			args: sanitizedArgs
 		};
 
 		return await prisma.logs.create({

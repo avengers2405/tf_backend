@@ -3,6 +3,7 @@ import { spawn } from "child_process";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs/promises";
+import logger from "../services/logger.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,7 +27,7 @@ function generateRandomString(length) {
  * Accepts a resume PDF file from form data and stores it in /resume folder
  */
 export const uploadResume = async (req, res) => {
-  console.log("Endpoint has been hit: ", "/resume/upload");
+  logger.log("Endpoint has been hit: ", "/resume/upload");
   try {
     // Check if file is present in the request
     if (!req.file) {
@@ -50,7 +51,7 @@ export const uploadResume = async (req, res) => {
       const nodeProcess = spawn('node', [scriptPath, fileName]);
       
       nodeProcess.stdout.on('data', (data) => {
-        console.log(`analyze.js output: ${data}`);
+        logger.log(`analyze.js output: ${data}`);
       });
       
       nodeProcess.stderr.on('data', (data) => {
@@ -96,7 +97,7 @@ export const uploadResume = async (req, res) => {
  * Query parameter: anonymized=true/false (default: false)
  */
 export const listResume = async (req, res) => {
-  console.log("Endpoint has been hit: ", "/resume/list");
+  logger.log("Endpoint has been hit: ", "/resume/list");
   try {
     // Check if anonymized parameter is true
     const isAnonymized = req.query.anonymized === 'true';
@@ -141,7 +142,7 @@ export const listResume = async (req, res) => {
  * Query parameter: anonymized=true/false (default: false)
  */
 export const downloadResume = async (req, res) => {
-  console.log("Endpoint has been hit: ", "/resume/download/:id");
+  logger.log("Endpoint has been hit: ", "/resume/download/:id");
   try {
     const { id } = req.params;
     

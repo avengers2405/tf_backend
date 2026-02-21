@@ -262,7 +262,9 @@ class AuthController {
         return;
       }
 
-      setSessionCookies(res, rotated.accessToken, rotated.refreshToken);
+      const role = await authService.resolveUserRole(rotated.userId);
+
+      setSessionCookies(res, rotated.accessToken, rotated.refreshToken, role);
 
       res.status(200).json({
         message: 'token refreshed',

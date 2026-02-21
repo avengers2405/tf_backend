@@ -1,5 +1,6 @@
 import sgMail from '@sendgrid/mail';
 import jwtService from './jwtService.js';
+import logger from "./logger.js";
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
@@ -30,7 +31,7 @@ class EmailService {
     try {
       const confirmationUrl = `${this.frontendUrl}/email-action?token=${encodeURIComponent(payload.token)}`;
 
-      console.log(payload.student_email);
+      logger.log(payload.student_email);
 
       const msg = {
         to: payload.student_email,
@@ -44,7 +45,7 @@ class EmailService {
       };
 
       await sgMail.send(msg);
-      console.log(`Email sent successfully to ${payload.student_email}`);
+      logger.log(`Email sent successfully to ${payload.student_email}`);
       return true;
     } catch (error) {
       console.error('Failed to send email:', error);

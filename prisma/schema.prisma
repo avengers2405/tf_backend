@@ -19,6 +19,8 @@ model User {
 
     student           Student?
     teacher           Teacher?
+    tnp               Tnp?
+    recruiter         Recruiter?
     auth_magic_tokens Auth_Magic_Token[]
     auth_sessions     Auth_Session[]
 }
@@ -139,6 +141,35 @@ model Teacher {
     teacher_roles          TeacherRole[]
     assigned_teacher_roles TeacherRole[] @relation("AssignedBy")
     supervised_projects Project[]
+}
+model Tnp {
+    id         String   @id @default(cuid())
+    user_id    String   @unique
+    first_name String
+    last_name  String
+    email      String   @unique
+    phone      String?  @unique
+    is_active  Boolean  @default(true)
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+
+    user User @relation(fields: [user_id], references: [id])
+}
+
+model Recruiter {
+    id           String   @id @default(cuid())
+    user_id      String   @unique
+    first_name   String
+    last_name    String
+    email        String   @unique
+    phone        String?  @unique
+    company_name String?
+    designation  String?
+    is_active    Boolean  @default(true)
+    created_at   DateTime @default(now())
+    updated_at   DateTime @updatedAt
+
+    user User @relation(fields: [user_id], references: [id])
 }
 
 // Defining skills, will be associated with students, projects, etc.
@@ -368,4 +399,15 @@ enum Gender {
     Male
     Female
     Other
+}
+
+model Logs {
+    id         String   @id @default(cuid())
+    created_at DateTime @default(now())
+    identifier String? // Custom tag for searching logs
+    type       String   @default("INFO") // Log type (INFO, ERROR, WARNING, etc.)
+    source     String? // Source of the log
+    data       Json // Log payload (string or JSON object)
+
+    @@map("Logs")
 }

@@ -1,6 +1,7 @@
 import { uploadResume, listResume, downloadResume } from "../controller/resume.controller.js";
 import { fileUpload } from "../middleware/fileUpload.js";
 import { Router } from "express";
+import jwtAuth from "../middleware/jwtAuth.js";
 const router = Router();
 
 // Route for uploading a resume
@@ -13,7 +14,7 @@ router.post("/upload", fileUpload, uploadResume);
 /*
   returns: JSON {resumes: [{id: String, filename: String, uploadDate: Date}]}
 */
-router.get("/list", listResume);
+router.get("/list", jwtAuth, listResume);
 
 // Route for downloading a resume by ID
 /*

@@ -8,12 +8,11 @@ const authConfig = {
   accessCookieName: process.env.AUTH_ACCESS_COOKIE_NAME || 'access_token',
   refreshCookieName: process.env.AUTH_REFRESH_COOKIE_NAME || 'refresh_token',
   roleCookieName: process.env.AUTH_ROLE_COOKIE_NAME || 'user_role',
-  cookieSameSite: process.env.AUTH_COOKIE_SAMESITE || 'none',
+  cookieSameSite: process.env.AUTH_COOKIE_SAMESITE || 'lax',
   isProduction: process.env.NODE_ENV === 'production',
   accessCookieMaxAgeMs: Number(process.env.AUTH_ACCESS_COOKIE_MAX_AGE_MS) || 15 * 60 * 1000,
   refreshCookieMaxAgeMs: Number(process.env.AUTH_REFRESH_COOKIE_MAX_AGE_MS) || 30 * 24 * 60 * 60 * 1000,
   getAccessCookieOptions() {
-    logger.log(this.isProduction, this.cookieSameSite, this.accessCookieMaxAgeMs)
     return {
       httpOnly: true,
       secure: this.isProduction,

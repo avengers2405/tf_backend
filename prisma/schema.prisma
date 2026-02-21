@@ -7,7 +7,6 @@ datasource db {
   provider = "postgresql"
 }
 
-// Defining users: students, teachers, etc.
 model User {
   id                          String               @id @default(cuid())
   username                    String               @unique
@@ -123,15 +122,15 @@ model Student {
   created_at             DateTime                    @default(now())
   updated_at             DateTime                    @updatedAt
   skills                 String[]
+  isPlaced               Boolean                     @default(false)
   documents              Document[]
   drive_responses        Drive_Response[]
   received_invitations   Group_Invitation[]          @relation("ReceivedInvitations")
   sent_invitations       Group_Invitation[]          @relation("SentInvitations")
+  internshipApplications InternshipApplication[]
   notifications          Notifications[]
   user                   User                        @relation(fields: [user_id], references: [id])
   student_groups         Student_Group_Association[]
-  isPlaced               Boolean                     @default(false)
-  internshipApplications InternshipApplication[]
 }
 
 model Teacher {
@@ -397,38 +396,38 @@ model Logs {
 }
 
 model Internship {
-  id          String    @id @default(cuid())
-  title       String
-  company     String
-  description String
-  stipend     String?
-  duration    String?
-  skills      String[]
-  tags        String[]
-  min_cgpa    Float?
-  departments String[]
-  years       Int[]
-  posted_by   String
-  posted_date DateTime  @default(now())
-  deadline    DateTime
-  applicants  Int       @default(0)
-  created_at  DateTime  @default(now())
-  updated_at  DateTime  @updatedAt
-  postedBy    Recruiter @relation(fields: [posted_by], references: [id], onDelete: Cascade)
+  id           String                  @id @default(cuid())
+  title        String
+  company      String
+  description  String
+  stipend      String?
+  duration     String?
+  skills       String[]
+  tags         String[]
+  min_cgpa     Float?
+  departments  String[]
+  years        Int[]
+  posted_by    String
+  posted_date  DateTime                @default(now())
+  deadline     DateTime
+  applicants   Int                     @default(0)
+  created_at   DateTime                @default(now())
+  updated_at   DateTime                @updatedAt
+  postedBy     Recruiter               @relation(fields: [posted_by], references: [id], onDelete: Cascade)
   applications InternshipApplication[]
+
   @@map("Internship")
 }
 
 model InternshipApplication {
-  id            String   @id @default(uuid())
-  studentId     String
-  internshipId  String
-  status        String   @default("APPLIED")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  student       Student     @relation(fields: [studentId], references: [registration_number])
-  internship    Internship  @relation(fields: [internshipId], references: [id])
+  id           String     @id @default(uuid())
+  studentId    String
+  internshipId String
+  status       String     @default("APPLIED")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  internship   Internship @relation(fields: [internshipId], references: [id])
+  student      Student    @relation(fields: [studentId], references: [registration_number])
 }
 
 enum Phase_Status {

@@ -53,6 +53,23 @@ class EmailService {
     }
   }
 
+  async sendInviteMagicLinkEmail(payload) {
+    try {
+      const msg = {
+        to: payload.email,
+        from: this.senderEmail,
+        subject: payload.subject || 'You have been invited',
+        html: this.generateInviteMagicLinkTemplate(payload),
+      };
+
+      await sgMail.send(msg);
+      return true;
+    } catch (error) {
+      console.error('Failed to send invite magic-link email:', error);
+      return false;
+    }
+  }
+
   generateEmailTemplate(studentName, companyName, confirmationUrl) {
   return `
     <!DOCTYPE html>
@@ -130,6 +147,44 @@ class EmailService {
             <p>If the button does not work, use this link:</p>
             <p><a href="${magicLink}">${magicLink}</a></p>
             <p>If you did not request this, you can safely ignore this email.</p>
+          </div>
+        </body>
+      </html>
+    `;
+  }
+
+  generateInviteMagicLinkTemplate(payload) {
+    const safeMessage = payload.message || 'You have received an invitation. Click below to continue.';
+    const expiryText = payload.expiresAt
+      ? new Date(payload.expiresAt).toLocaleString()
+      : 'soon';
+
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .button {
+              display: inline-block;
+              background-color: #0d6efd;
+              color: white;
+              padding: 12px 20px;
+              text-decoration: none;
+              border-radius: 6px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h2>Invitation Link</h2>
+            <p>${safeMessage}</p>
+            <p><a href="${payload.magicLink}" class="button">Open Invitation</a></p>
+            <p>This link expires on: <strong>${expiryText}</strong></p>
+            <p>If the button does not work, use this link:</p>
+            <p><a href="${payload.magicLink}">${payload.magicLink}</a></p>
+            <p>If you were not expecting this email, you can ignore it.</p>
           </div>
         </body>
       </html>

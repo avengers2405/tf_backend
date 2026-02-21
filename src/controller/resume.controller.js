@@ -346,7 +346,8 @@ export const listAllResumes = async (req, res) => {
         name: true,
         document_description: true,
         document_url: true,
-        created_at: true
+        created_at: true,
+        skills:true
       },
       // Group them logically by student, then sort by newest first
       orderBy: [

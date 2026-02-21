@@ -210,6 +210,49 @@ class AuthController {
     }
   }
 
+  async verifyInviteMagicLink(req, res) {
+    try {
+      const token = req.query.token || req.body.token;
+
+      if (!token) {
+        res.status(400).json({ error: 'token is required' });
+        return;
+      }
+
+      const result = await authService.consumeInviteMagicLinkToken(token);
+
+      if (!result) {
+        res.status(401).json({ error: 'invalid or expired token' });
+        return;
+      }
+
+      const { user, role: targetRole } = result;
+
+      const tokens = await authService.issueSessionTokens(user.id);
+      
+      // Use the role from the invite token (already set up during consumption)
+      const role = targetRole || await authService.resolveUserRole(user.id);
+
+      setSessionCookies(res, tokens.accessToken, tokens.refreshToken, role);
+
+      res.status(200).json({
+        message: 'invite link verified and login successful',
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          is_verified: user.is_verified,
+          role,
+        },
+        access_token: tokens.accessToken,
+        refresh_token: tokens.refreshToken,
+      });
+    } catch (error) {
+      console.error('Verify invite magic-link error:', error);
+      res.status(500).json({ error: 'internal server error' });
+    }
+  }
+
   async login(req, res) {
     try {
       const { identifier, password } = req.body;

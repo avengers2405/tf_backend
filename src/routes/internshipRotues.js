@@ -5,8 +5,12 @@ import {
   getInternshipById,
   createInternship,
   applyForInternship,
+
+  getStudentApplications
+
   selectStudent,
   checkIfPlaced
+
 } from "../controller/internshipController.js";
 
 const router = express.Router();
@@ -29,6 +33,7 @@ router.get("/:id", getInternshipById)
 // Post internship
 router.post("/", createInternship)
 router.post("/:id/apply", applyForInternship)
+router.get("/applications/:id",getStudentApplications)
 
 router.get("/check-placed/:userId", checkIfPlaced);
 router.put("/applications/:id/select", selectStudent);

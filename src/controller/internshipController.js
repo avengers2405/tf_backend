@@ -248,29 +248,35 @@
 //   }
 // }
 import { prisma } from "../db/index.js";
-
-// Get all internships
 export const getAllInternships = async (req, res) => {
+  const { user_id } = req.query; 
+  console.log("User ID",user_id);
+
   try {
+    const filterCondition = user_id ? { postedBy: { user_id: user_id } } : {};
+    console.log("Filer Condition",filterCondition);
     const internships = await prisma.internship.findMany({
+      where: filterCondition,
       orderBy: { posted_date: "desc" },
       include: {
         postedBy: {
           select: {
-            id: true,
+            id: true,             // This is the Recruiter table ID
+            user_id: true,        // <--- ADD THIS! This is the global User ID
             first_name: true,
             last_name: true,
             company_name: true,
           },
         },
       },
-    })
-    res.status(200).json(internships)
+    });
+    
+    res.status(200).json(internships);
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ message: "Failed to fetch internships" })
+    console.error(error);
+    res.status(500).json({ message: "Failed to fetch internships" });
   }
-}
+};
 
 // Get internship by ID (Includes applied students for TNP/Recruiters)
 export const getInternshipById = async (req, res) => {
@@ -291,6 +297,10 @@ export const getInternshipById = async (req, res) => {
         },
         // THIS IS THE FILTER: It only fetches rows where status is exactly "APPLIED"
         applications: {
+          where: {
+            status: "APPLIED" || "SELECTED"
+          },
+
           include: {
             student: {
               select: {
@@ -388,6 +398,88 @@ export const applyForInternship = async (req, res) => {
   }
 }
 
+// Get all applications for a specific student
+// export const getStudentApplications = async (req, res) => {
+//   console.log("Response",req.params);
+//   const { userId } = req.params.id; // The global User ID
+//   console.log("User Id",userId);
+//   try {
+//     // 1. Find the student record
+//     const student = await prisma.student.findUnique({
+//       where: { user_id: userId }
+//     });
+//     if (!student) {
+//       return res.status(404).json({ message: "Student record not found" });
+//     }
+
+//     // 2. Fetch applications for this student
+//     const applications = await prisma.internshipApplication.findMany({
+//       where: {
+//         studentId: student.registration_number
+//       },
+//       include: {
+//         internship: {
+//           select: {
+//             id: true,
+//             title: true,
+//             company: true,
+//             posted_date: true,
+//             deadline: true,
+//             // add any other fields you want to show in the list
+//           }
+//         }
+//       },
+//       orderBy: { createdAt: 'desc' }
+//     });
+
+//     res.status(200).json(applications);
+//   } catch (error) {
+//     console.error("Fetch applications error:", error);
+//     res.status(500).json({ message: "Failed to fetch applications" });
+//   }
+// };
+// internshipController.js
+export const getStudentApplications = async (req, res) => {
+  // Use 'id' because that's what is defined in your router (:id)
+  const { id } = req.params; 
+  
+  console.log("Fetching applications for User ID:", id);
+
+  try {
+    // 1. Find the student record using the ID from the URL
+    const student = await prisma.student.findUnique({
+      where: { user_id: id } // 'id' here contains 'student_user'
+    });
+
+    if (!student) {
+      return res.status(404).json({ message: "Student record not found" });
+    }
+
+    // 2. Fetch applications for this student
+    const applications = await prisma.internshipApplication.findMany({
+      where: {
+        studentId: student.registration_number
+      },
+      include: {
+        internship: {
+          select: {
+            id: true,
+            title: true,
+            company: true,
+            posted_date: true,
+            deadline: true,
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.status(200).json(applications);
+  } catch (error) {
+    console.error("Fetch applications error:", error);
+    res.status(500).json({ message: "Failed to fetch applications" });
+
+
 export const selectStudent = async (req, res) => {
   console.log("Inside the select student function");
   try {
@@ -436,5 +528,6 @@ export const checkIfPlaced = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ isPlaced: false });
+
   }
 };

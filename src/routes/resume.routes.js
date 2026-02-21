@@ -8,7 +8,7 @@ const router = Router();
 /* 
   returns: JSON {skills: String[], success: boolean}
 */
-router.post("/upload", fileUpload, uploadResume);
+router.post("/upload", jwtAuth, fileUpload, uploadResume);
 
 // Route for getting list of resumes
 /*
@@ -20,6 +20,6 @@ router.get("/list", jwtAuth, listResume);
 /*
   returns: PDF file as buffer
 */
-router.get("/download/:id", downloadResume);
+router.get("/download/:id", jwtAuth, downloadResume);
 
 export default router;

@@ -25,7 +25,6 @@ function cleanText(text) {
 function extractAllSkills(rawText) {
   const found = [];
   const cleanedText = cleanText(rawText);
-
   for (const category in skillMap) {
     for (const skill of skillMap[category]) {
       const escapedSkill = skill.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

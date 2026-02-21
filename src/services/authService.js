@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import prisma from '../db/prisma.js';
 import jwtService from './jwtService.js';
 import authConfig from '../config/authConfig.js';
+import emailService from './emailService.js';
 
 const SCRYPT_KEYLEN = 64;
 const PASSWORD_SCHEME = 'scrypt';
@@ -417,6 +418,165 @@ class AuthService {
       });
 
       return user;
+    });
+
+    return result;
+  }
+
+  async issueInviteMagicLinks({ emails, message, expiresAt, createdByUserId, targetRole = 'recruiter' }) {
+    const callbackPath = authConfig.inviteMagicLinkPath.startsWith('/')
+      ? authConfig.inviteMagicLinkPath
+      : `/${authConfig.inviteMagicLinkPath}`;
+
+    const expiresInSeconds = Math.floor((expiresAt.getTime() - Date.now()) / 1000);
+    if (expiresInSeconds <= 0) {
+      throw new Error('Invite token expiry must be in the future');
+    }
+
+    // Validate target role
+    const allowedRoles = ['recruiter', 'teacher'];
+    if (!allowedRoles.includes(targetRole)) {
+      throw new Error(`Invalid target role. Allowed roles: ${allowedRoles.join(', ')}`);
+    }
+
+    const results = [];
+
+    for (const email of emails) {
+      const user = await this.findUserByIdentifier(email);
+
+      if (!user) {
+        results.push({
+          email,
+          status: 'failed',
+          reason: 'user_not_found',
+        });
+        continue;
+      }
+
+      const token = jwtService.generateAuthToken(
+        {
+          sub: user.id,
+          type: 'invite_magic',
+        },
+        expiresInSeconds
+      );
+
+      const payload = jwtService.verifyAuthToken(token);
+      if (!payload?.jti || !payload?.exp) {
+        results.push({
+          email,
+          status: 'failed',
+          reason: 'token_generation_failed',
+        });
+        continue;
+      }
+
+      await prisma.invite_Magic_Token.create({
+        data: {
+          user_id: user.id,
+          recipient_email: email,
+          created_by_user_id: createdByUserId || null,
+          custom_message: message || null,
+          target_role: targetRole,
+          token_hash: jwtService.hashToken(token),
+          jti: payload.jti,
+          expires_at: new Date(payload.exp * 1000),
+        },
+      });
+
+      const magicLink = `${authConfig.frontendUrl}${callbackPath}?token=${encodeURIComponent(token)}`;
+
+      const sent = await emailService.sendInviteMagicLinkEmail({
+        email,
+        message,
+        magicLink,
+        expiresAt,
+      });
+
+      results.push({
+        email,
+        status: sent ? 'sent' : 'failed',
+        reason: sent ? null : 'email_send_failed',
+        ...(process.env.NODE_ENV !== 'production' ? { preview_link: magicLink } : {}),
+      });
+    }
+
+    return results;
+  }
+
+  async consumeInviteMagicLinkToken(token) {
+    const payload = jwtService.verifyAuthToken(token);
+    if (!payload || payload.type !== 'invite_magic' || !payload.sub) {
+      return null;
+    }
+
+    const tokenHash = jwtService.hashToken(token);
+    const tokenRow = await prisma.invite_Magic_Token.findUnique({
+      where: {
+        token_hash: tokenHash,
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    if (!tokenRow) {
+      return null;
+    }
+
+    if (tokenRow.user_id !== payload.sub) {
+      return null;
+    }
+
+    // Allow multiple logins until expiry (no one-time use restriction)
+    if (tokenRow.expires_at.getTime() <= Date.now()) {
+      return null;
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      // Track first use only (optional, for analytics)
+      if (!tokenRow.used_at) {
+        await tx.invite_Magic_Token.update({
+          where: {
+            id: tokenRow.id,
+          },
+          data: {
+            used_at: new Date(),
+          },
+        });
+      }
+
+      const user = await tx.user.update({
+        where: {
+          id: tokenRow.user_id,
+        },
+        data: {
+          is_verified: true,
+        },
+      });
+
+      // Handle role-specific setup based on target_role
+      if (tokenRow.target_role === 'recruiter') {
+        // Upsert recruiter record
+        await tx.recruiter.upsert({
+          where: {
+            user_id: user.id,
+          },
+          update: {
+            is_active: true, // Reactivate if already exists
+            email: tokenRow.recipient_email,
+          },
+          create: {
+            user_id: user.id,
+            first_name: user.username.split(' ')[0] || user.username,
+            last_name: user.username.split(' ').slice(1).join(' ') || 'Recruiter',
+            email: tokenRow.recipient_email,
+            is_active: true,
+          },
+        });
+      }
+
+      return { user, role: tokenRow.target_role };
     });
 
     return result;

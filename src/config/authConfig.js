@@ -5,6 +5,7 @@ const authConfig = {
   magicTokenExpiresIn: process.env.JWT_MAGIC_EXPIRES_IN || '10m',
   frontendUrl: process.env.FRONTEND_URL,
   authMagicLinkPath: process.env.AUTH_MAGIC_LINK_PATH,
+  inviteMagicLinkPath: process.env.AUTH_INVITE_MAGIC_LINK_PATH || '/auth/invite-verify',
   accessCookieName: process.env.AUTH_ACCESS_COOKIE_NAME || 'access_token',
   refreshCookieName: process.env.AUTH_REFRESH_COOKIE_NAME || 'refresh_token',
   roleCookieName: process.env.AUTH_ROLE_COOKIE_NAME || 'user_role',

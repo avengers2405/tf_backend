@@ -300,6 +300,7 @@ export const getInternshipById = async (req, res) => {
           where: {
             status: "APPLIED" || "SELECTED"
           },
+
           include: {
             student: {
               select: {
@@ -313,7 +314,7 @@ export const getInternshipById = async (req, res) => {
               }
             }
           },
-          orderBy: { createdAt: 'desc' }
+          orderBy: { createdAt: "desc" }
         }
       },
     })
@@ -353,8 +354,8 @@ export const createInternship = async (req, res) => {
 
 // Apply for an internship
 export const applyForInternship = async (req, res) => {
-  const { id } = req.params; 
-  const { userId } = req.body; 
+  const { id } = req.params;
+  const { userId } = req.body;
 
   try {
     const student = await prisma.student.findUnique({
@@ -381,7 +382,7 @@ export const applyForInternship = async (req, res) => {
       data: {
         studentId: student.registration_number,
         internshipId: id,
-        status: "APPLIED" 
+        status: "APPLIED"
       }
     });
 
@@ -396,6 +397,7 @@ export const applyForInternship = async (req, res) => {
     res.status(500).json({ message: "Failed to submit application" });
   }
 }
+
 // Get all applications for a specific student
 // export const getStudentApplications = async (req, res) => {
 //   console.log("Response",req.params);
@@ -476,5 +478,56 @@ export const getStudentApplications = async (req, res) => {
   } catch (error) {
     console.error("Fetch applications error:", error);
     res.status(500).json({ message: "Failed to fetch applications" });
+
+
+export const selectStudent = async (req, res) => {
+  console.log("Inside the select student function");
+  try {
+    const { id } = req.params;
+
+    // Update application status
+    const application = await prisma.internshipApplication.update({
+      where: { id },
+      data: {
+        status: "SELECTED",
+      },
+    });
+
+    // Mark student as placed
+    await prisma.student.update({
+      where: {
+        registration_number: application.studentId,
+      },
+      data: {
+        isPlaced: true,
+      },
+    });
+
+    res.json({ message: "Student selected successfully" });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error selecting student" });
+  }
+};
+
+export const checkIfPlaced = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const student = await prisma.student.findUnique({
+      where: { user_id: userId },
+      select: { isPlaced: true },
+    });
+
+    if (!student) {
+      return res.json({ isPlaced: false });
+    }
+
+    res.json({ isPlaced: student.isPlaced });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ isPlaced: false });
+
   }
 };

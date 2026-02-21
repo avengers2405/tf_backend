@@ -16,6 +16,7 @@ import studentRoutes from "./routes/student.routes.js";
 import teamBuilderRoutes from "./routes/team-builder.routes.js";
 import logger from "./services/logger.js";
 import postOpportunity from "./routes/post-opportunity.routes.js";
+import inviteRoutes from "./routes/invite.routes.js";
 import internshipRoutes from "./routes/internshipRotues.js";
 
 const app = express();
@@ -45,6 +46,9 @@ app.use("/webhook", express.json({
     }
   }
 }));
+
+app.use('/auth', authRoutes);
+app.use('/invites', inviteRoutes);
 
 // All resume routes will now start with /api/resumes
 //app.use("/api/resumes", resumeRoutes); 
@@ -86,4 +90,3 @@ app.use("/logs", logsRoutes);
 app.listen(PORT, () => {
   logger.log(`🚀 Enterprise Server running on port ${PORT}`);
 });
-

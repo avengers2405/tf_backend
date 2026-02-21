@@ -1,61 +1,116 @@
 import { prisma } from "../db/index.js";
 import logger from "../services/logger.js";
 
+// export const createTeam = async (req, res) => {
+//   try {
+//     logger.log("Entered create grp");
+//     const { group_name, student_ids, creator_user_id } = req.body;
+
+//     if (!group_name || !student_ids || !creator_user_id) {
+//       return res.status(400).json({ error: "Missing required fields." });
+//     }
+
+//     // 1. Fetch the registration_number for the creator
+//     logger.log("Fetching creator student reg");
+//     const creatorStudent = await prisma.student.findUnique({
+//       where: { user_id: creator_user_id },
+//       select: { registration_number: true }
+//     });
+
+//     if (!creatorStudent) {
+//       return res.status(404).json({ error: "Student profile not found." });
+//     }
+
+//     const creatorRegNo = creatorStudent.registration_number;
+//     const uniqueStudentRegNos = [...new Set([...student_ids, creatorRegNo])];
+
+//     // 2. Run Transaction using Prisma's auto-incrementing ID
+//     logger.log("Starting transaction");
+//     const newGroup = await prisma.$transaction(async (tx) => {
+//       // Create the group (Prisma/DB generates the ID here)
+//       const group = await tx.group.create({
+//         data: { group_name },
+//       });
+
+//       // Prepare associations using the newly generated group.group_id
+//       logger.log("Running assocaition");
+//       const associations = uniqueStudentRegNos.map((regNo) => ({
+//         student_id: regNo,
+//         group_id: group.group_id, 
+//       }));
+
+//       await tx.student_Group_Association.createMany({
+//         data: associations,
+//       });
+
+//       return group;
+//     });
+
+//     // 3. Return the response
+//     res.status(201).json({
+//       group_id: newGroup.group_id,
+//       group_name: newGroup.group_name
+//     });
+
+//   } catch (error) {
+//     console.error("Team Creation Error:", error);
+//     res.status(500).json({ error: "Internal Server Error", details: error.message });
+//   }
+// };
+
 export const createTeam = async (req, res) => {
-  try {
-    logger.log("Entered create grp");
-    const { group_name, student_ids, creator_user_id } = req.body;
+  try {
+    logger.log("Entered create grp");
+    // You no longer need student_ids here for the association
+    const { group_name, creator_user_id } = req.body;
 
-    if (!group_name || !student_ids || !creator_user_id) {
-      return res.status(400).json({ error: "Missing required fields." });
-    }
+    if (!group_name || !creator_user_id) {
+      return res.status(400).json({ error: "Missing required fields." });
+    }
 
-    // 1. Fetch the registration_number for the creator
-    logger.log("Fetching creator student reg");
-    const creatorStudent = await prisma.student.findUnique({
-      where: { user_id: creator_user_id },
-      select: { registration_number: true }
-    });
+    // 1. Fetch the registration_number for the creator
+    logger.log("Fetching creator student reg");
+    const creatorStudent = await prisma.student.findUnique({
+      where: { user_id: creator_user_id },
+      select: { registration_number: true }
+    });
 
-    if (!creatorStudent) {
-      return res.status(404).json({ error: "Student profile not found." });
-    }
+    if (!creatorStudent) {
+      return res.status(404).json({ error: "Student profile not found." });
+    }
 
-    const creatorRegNo = creatorStudent.registration_number;
-    const uniqueStudentRegNos = [...new Set([...student_ids, creatorRegNo])];
+    const creatorRegNo = creatorStudent.registration_number;
 
-    // 2. Run Transaction using Prisma's auto-incrementing ID
-    logger.log("Starting transaction");
-    const newGroup = await prisma.$transaction(async (tx) => {
-      // Create the group (Prisma/DB generates the ID here)
-      const group = await tx.group.create({
-        data: { group_name },
-      });
+    // 2. Run Transaction using Prisma's auto-incrementing ID
+    logger.log("Starting transaction");
+    const newGroup = await prisma.$transaction(async (tx) => {
+      // Create the group
+      const group = await tx.group.create({
+        data: { group_name },
+      });
 
-      // Prepare associations using the newly generated group.group_id
-      logger.log("Running assocaition");
-      const associations = uniqueStudentRegNos.map((regNo) => ({
-        student_id: regNo,
-        group_id: group.group_id, 
-      }));
+      // 3. Create association ONLY for the creator
+      logger.log("Running association for creator only");
+      await tx.student_Group_Association.create({
+        data: {
+          student_id: creatorRegNo,
+          group_id: group.group_id,
+        },
+      });
 
-      await tx.student_Group_Association.createMany({
-        data: associations,
-      });
+      return group;
+    });
 
-      return group;
-    });
+    // 4. Return the response
+    res.status(201).json({
+      group_id: newGroup.group_id,
+      group_name: newGroup.group_name
+    });
 
-    // 3. Return the response
-    res.status(201).json({
-      group_id: newGroup.group_id,
-      group_name: newGroup.group_name
-    });
-
-  } catch (error) {
-    console.error("Team Creation Error:", error);
-    res.status(500).json({ error: "Internal Server Error", details: error.message });
-  }
+  } catch (error) {
+    console.error("Team Creation Error:", error);
+    res.status(500).json({ error: "Internal Server Error", details: error.message });
+  }
 };
 
 export const getMyTeams = async (req, res) => {
@@ -116,4 +171,50 @@ export const getMyTeams = async (req, res) => {
     console.error("Error fetching teams:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
+};
+
+// Ensure your route looks like this:
+// router.get("/get-student-groups/:student_reg_id", getStudentGroups);
+
+export const getStudentGroups = async (req, res) => {
+    try {
+        // 1. Extract the target student's ID from the URL
+        const { studentRegId } = req.params;
+        
+        // 2. SAFETY CHECK: Prevent Prisma from fetching all records if the param is missing
+        if (!studentRegId) {
+            return res.status(400).json({ error: "Student Registration ID is missing from the request URL." });
+        }
+
+        // 3. Fetch only the associations for this specific student
+        const associations = await prisma.student_Group_Association.findMany({
+            where: { 
+                student_id: studentRegId 
+            },
+            select: {
+                group: {
+                    select: {
+                        group_id: true,
+                        group_name: true
+                    }
+                }
+            }
+        });
+
+        // 4. Format the response
+        const groups = associations.map(assoc => ({
+            group_id: assoc.group.group_id,
+            group_name: assoc.group.group_name
+        }));
+
+        // 5. Return the count and the group details
+        res.status(200).json({
+            count: groups.length,
+            groups: groups
+        });
+
+    } catch (error) {
+        console.error("Error fetching student groups:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
 };

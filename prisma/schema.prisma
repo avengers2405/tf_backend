@@ -253,6 +253,8 @@ model Project {
     technology_stack String
     academic_year    String
     repo_url         String?  @unique
+    min_cgpa              Float
+    registration_deadline DateTime
 
     // Simplified: Just point to the Teacher's ID
     supervisor_id    String?

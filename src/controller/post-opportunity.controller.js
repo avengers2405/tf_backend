@@ -1,164 +1,128 @@
+// controllers/opportunityController.js
 import { prisma } from "../db/index.js";
 
-async function generateProjectId() {
-  const lastProject = await prisma.project.findFirst({
-    orderBy: { project_id: "desc" },
-  });
+export const postOpportunity = async (req, res) => {
+  const { 
+    title, 
+    company, 
+    type, 
+    description, 
+    skills, 
+    min_cgpa, 
+    registration_deadline,
+    userid // Coming from the frontend payload
+  } = req.body;
 
-  if (!lastProject) return "PRO001";
+  // --- 1. Strict Validation ---
+  if (!title || !type || !description || !userid) {
+    return res.status(400).json({ error: "Missing required fields: title, type, description, or userid." });
+  }
 
-  const lastNumber = parseInt(lastProject.project_id.replace("PRO", ""));
-  const newNumber = lastNumber + 1;
+  if (type === 'project' && (!skills || !Array.isArray(skills))) {
+    return res.status(400).json({ error: "Projects require a skills array for the technology stack." });
+  }
 
-  return `PRO${newNumber.toString().padStart(3, "0")}`;
-}
-
-export const projectController = {
-  
-  createProject: async (req, res) => {
   try {
-    const { 
-      title, 
-      description, 
-      skills,           // Array of skills from the form
-      years,            // Array of numbers from the form
-      repo_url, 
-      user_id 
-    } = req.body;
+    const result = await prisma.$transaction(async (tx) => {
+      
+      // --- 2. Get Teacher ID from User ID ---
+      const teacher = await tx.teacher.findUnique({
+        where: { user_id: userid },
+        select: { id: true }
+      });
 
-    if (!title || !description || !user_id) {
-      return res.status(400).json({ error: "Title, description, and user identity are required." });
+      if (!teacher) {
+        console.error(`No teacher profile found for user_id: ${userid}`);
+        throw new Error("TEACHER_NOT_FOUND");
+      }
+
+      // --- 3. Logic for Project Mapping ---
+      if (type === 'project') {
+        const currentYear = new Date().getFullYear();
+        const academicYear = `${currentYear}-${currentYear + 1}`;
+
+        const newProject = await tx.project.create({
+          data: {
+            title,
+            description,
+            technology_stack: skills.join(', '), 
+            academic_year: academicYear,
+            supervisor_id: teacher.id, // Using the found Teacher ID
+          },
+          select: { project_id: true } // Only return the project_id as requested
+        });
+
+        return { project_id: newProject.project_id };
+      } 
+      
+      // --- 4. Logic for Company Drive ---
+      else {
+        if (!registration_deadline) throw new Error("DEADLINE_REQUIRED");
+        
+        const drive = await tx.company_Drive.create({
+          data: {
+            company_name: company || "N/A",
+            min_cgpa: parseFloat(min_cgpa) || 0,
+            registration_deadline: new Date(registration_deadline),
+          }
+        });
+        return { drive_id: drive.drive_id };
+      }
+    });
+
+    res.status(201).json({ success: true, ...result });
+
+  } catch (error) {
+    console.error("Opportunity Creation Error:", error);
+
+    // Handle specific business logic errors
+    if (error.message === "TEACHER_NOT_FOUND") {
+      return res.status(404).json({ error: "The provided User ID is not associated with a Teacher profile." });
+    }
+    if (error.message === "DEADLINE_REQUIRED") {
+      return res.status(400).json({ error: "Company drives require a registration deadline." });
     }
 
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+export const getProjectOpportunitiesById = async (req, res) => {
+  const { userid } = req.params; // or req.query depending on your route
+
+  if (!userid) {
+    return res.status(400).json({ error: "User ID is required." });
+  }
+
+  try {
+    // 1. Find the Teacher record linked to this User
     const teacher = await prisma.teacher.findUnique({
-      where: { user_id: user_id }
+      where: { user_id: userid },
+      select: { id: true }
     });
 
     if (!teacher) {
-      return res.status(403).json({ error: "Only registered teachers can post projects." });
+      return res.status(404).json({ error: "Teacher profile not found for this user." });
     }
 
-    // 3. Handle Academic Year Defaulting
-    // Determine the default year (e.g., 2024-25) or a string based on user input
-    const currentYear = new Date().getFullYear();
-    const defaultAcademicYear = `${currentYear}-${(currentYear + 1).toString().slice(-2)}`;
-    
-    // If the frontend sent years (e.g. [3, 4]), format them; otherwise, use the default
-    const formattedAcademicYear = (years && years.length > 0)
-      ? years.map(y => `${y}th Year`).join(", ")
-      : defaultAcademicYear;
-
-    // 4. Handle Technology Stack
-    // Converts the skills array from the form into a string for the DB
-    const technologyStack = Array.isArray(skills) && skills.length > 0 
-      ? skills.join(", ") 
-      : "Not specified";
-
-    // 5. Generate ID and Save
-    const customId = await generateProjectId();
-
-    const newProject = await prisma.project.create({
-      data: {
-        project_id: customId,
-        title,
-        description,
-        technology_stack: technologyStack,
-        academic_year: formattedAcademicYear, // Uses the derived or default year
-        repo_url: repo_url || null,           // Students can add this later
-        supervisor: {
-          connect: { id: teacher.id }
-        }
+    // 2. Get all projects supervised by this teacher
+    const opportunities = await prisma.project.findMany({
+      where: {
+        supervisor_id: teacher.id
       },
-      include: {
-        supervisor: true
+      orderBy: {
+        project_id: 'desc' // Newest projects first
       }
     });
 
-    return res.status(201).json({
-      message: "Project opportunity posted successfully",
-      project: newProject,
+    res.status(200).json({
+      success: true,
+      count: opportunities.length,
+      data: opportunities
     });
+
   } catch (error) {
-    console.error("Controller Error:", error);
-    return res.status(500).json({ error: error.message });
+    console.error("Error fetching teacher opportunities:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
-},
-
-  getAllProjects: async (req, res) => {
-    try {
-      const projects = await prisma.project.findMany({
-        include: {
-          // Include Supervisor (TeacherRole) and the nested Teacher profile
-          supervisor: {
-            include: {
-              teacher: true,
-              role: true
-            }
-          },
-          phases: true,
-          groups: {
-            include: {
-              group: true,
-            },
-          },
-        },
-        orderBy: {
-          academic_year: 'desc',
-        },
-      });
-
-      return res.status(200).json(projects);
-    } catch (error) {
-      return res.status(500).json({ error: error.message });
-    }
-  },
-
-  getProjectById: async (req, res) => {
-    try {
-      const { id } = req.params;
-
-      const project = await prisma.project.findUnique({
-        where: { project_id: id },
-        include: {
-          // Include detailed supervisor info
-          supervisor: {
-            include: {
-              teacher: {
-                select: {
-                  first_name: true,
-                  last_name: true,
-                  email: true,
-                  department: true
-                }
-              },
-              role: true
-            }
-          },
-          phases: true,
-          git_logs: true,
-          groups: {
-            include: {
-              group: {
-                include: {
-                  students: {
-                    include: {
-                      student: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      });
-
-      if (!project) {
-        return res.status(404).json({ error: "Project not found" });
-      }
-
-      return res.status(200).json(project);
-    } catch (error) {
-      return res.status(500).json({ error: error.message });
-    }
-  },
 };

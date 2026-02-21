@@ -13,6 +13,7 @@ const authConfig = {
   accessCookieMaxAgeMs: Number(process.env.AUTH_ACCESS_COOKIE_MAX_AGE_MS) || 15 * 60 * 1000,
   refreshCookieMaxAgeMs: Number(process.env.AUTH_REFRESH_COOKIE_MAX_AGE_MS) || 30 * 24 * 60 * 60 * 1000,
   getAccessCookieOptions() {
+    logger.log(this.isProduction, this.cookieSameSite, this.accessCookieMaxAgeMs)
     return {
       httpOnly: true,
       secure: this.isProduction,

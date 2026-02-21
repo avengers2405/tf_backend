@@ -16,52 +16,24 @@ import studentRoutes from "./routes/student.routes.js";
 import teamBuilderRoutes from "./routes/team-builder.routes.js";
 import logger from "./services/logger.js";
 import postOpportunity from "./routes/post-opportunity.routes.js";
-import authConfig from './config/authConfig.js';
+import internshipRoutes from "./routes/internshipRotues.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Trust proxy - CRITICAL for HTTPS detection behind reverse proxies (Vercel, Railway, Azure, etc.)
-app.set('trust proxy', 1);
-
 validateAuthConfig();
 
-// Middleware configuration
 app.use(cors({
   origin: process.env.FRONTEND_URL ?? "http://localhost:3000",
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  exposedHeaders: ['Set-Cookie'],
+  exposedHeaders: ['Set-Cookie']
 }));
 
 logger.log("Using CORS with origin:", process.env.FRONTEND_URL ?? "http://localhost:3000");
 logger.log("NODE_ENV:", process.env.NODE_ENV);
 logger.log("AUTH_COOKIE_SAMESITE:", process.env.AUTH_COOKIE_SAMESITE);
-
-// Add middleware to log all requests
-app.use((req, res, next) => {
-  if (req.path.includes('/auth/login')) {
-    console.log('=== LOGIN REQUEST ===');
-    console.log('Origin:', req.headers.origin);
-    console.log('Protocol:', req.protocol);
-    console.log('Host:', req.headers.host);
-    console.log('X-Forwarded-Proto:', req.headers['x-forwarded-proto']);
-    console.log('Secure:', req.secure);
-    console.log('====================');
-    
-    // Intercept response to log Set-Cookie headers
-    const originalJson = res.json;
-    res.json = function(data) {
-      console.log('=== LOGIN RESPONSE ===');
-      console.log('Set-Cookie headers:', res.getHeader('Set-Cookie'));
-      console.log('Response body:', JSON.stringify(data, null, 2));
-      console.log('=====================');
-      return originalJson.call(this, data);
-    };
-  }
-  next();
-});
 
 app.use(cookieParser());
 app.use(express.json());
@@ -108,24 +80,8 @@ app.post('/drives', (req, res) =>
 
 app.use("/resumeParser", resumeParserRoutes);
 app.use("/resume", resumeRoutes);
-
+app.use("/api/internships", internshipRoutes)
 app.use("/logs", logsRoutes);
-
-// Debug endpoint to test cookie settings
-app.get('/debug/cookie-config', (req, res) => {
-  res.json({
-    isProduction: authConfig.isProduction,
-    cookieSameSite: authConfig.cookieSameSite,
-    frontendUrl: authConfig.frontendUrl,
-    nodeEnv: process.env.NODE_ENV,
-    protocol: req.protocol,
-    secure: req.secure,
-    xForwardedProto: req.headers['x-forwarded-proto'],
-    origin: req.headers.origin,
-    host: req.headers.host,
-    accessCookieOptions: authConfig.getAccessCookieOptions(),
-  });
-});
 
 app.listen(PORT, () => {
   logger.log(`🚀 Enterprise Server running on port ${PORT}`);

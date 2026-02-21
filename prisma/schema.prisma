@@ -7,22 +7,27 @@ datasource db {
   provider = "postgresql"
 }
 
+// Defining users: students, teachers, etc.
 model User {
-  id                                                             String               @id @default(cuid())
-  username                                                       String               @unique
-  password                                                       String
-  created_at                                                     DateTime             @default(now())
-  updated_at                                                     DateTime             @updatedAt
-  is_verified                                                    Boolean              @default(false)
-  email                                                          String               @unique
-  auth_magic_tokens                                              Auth_Magic_Token[]
-  auth_sessions                                                  Auth_Session[]
-  Invite_Magic_Token_Invite_Magic_Token_created_by_user_idToUser Invite_Magic_Token[] @relation("Invite_Magic_Token_created_by_user_idToUser")
-  Invite_Magic_Token_Invite_Magic_Token_user_idToUser            Invite_Magic_Token[] @relation("Invite_Magic_Token_user_idToUser")
-  recruiter                                                      Recruiter?
-  student                                                        Student?
-  teacher                                                        Teacher?
-  tnp                                                            Tnp?
+  id                          String               @id @default(cuid())
+  username                    String               @unique
+  password                    String
+  created_at                  DateTime             @default(now())
+  updated_at                  DateTime             @updatedAt
+  is_verified                 Boolean              @default(false)
+  email                       String               @unique
+  auth_magic_tokens           Auth_Magic_Token[]
+  auth_sessions               Auth_Session[]
+  invite_magic_tokens_created Invite_Magic_Token[] @relation("InviteCreatedTokens")
+  invite_magic_tokens         Invite_Magic_Token[] @relation("InviteRecipientTokens")
+  recruiter                   Recruiter?
+  student                     Student?
+  teacher                     Teacher?
+  tnp                         Tnp?
+}
+
+model Temp {
+  id String @id @default(cuid())
 }
 
 model Auth_Magic_Token {
@@ -34,6 +39,22 @@ model Auth_Magic_Token {
   used_at    DateTime?
   created_at DateTime  @default(now())
   user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model Invite_Magic_Token {
+  id                 String    @id @default(cuid())
+  user_id            String
+  recipient_email    String
+  created_by_user_id String?
+  custom_message     String?
+  token_hash         String    @unique
+  jti                String    @unique
+  expires_at         DateTime
+  used_at            DateTime?
+  created_at         DateTime  @default(now())
+  target_role        String    @default("recruiter")
+  created_by         User?     @relation("InviteCreatedTokens", fields: [created_by_user_id], references: [id])
+  user               User      @relation("InviteRecipientTokens", fields: [user_id], references: [id], onDelete: Cascade)
 }
 
 model Auth_Session {
@@ -104,9 +125,13 @@ model Student {
   skills                 String[]
   documents              Document[]
   drive_responses        Drive_Response[]
+  received_invitations   Group_Invitation[]          @relation("ReceivedInvitations")
+  sent_invitations       Group_Invitation[]          @relation("SentInvitations")
   notifications          Notifications[]
   user                   User                        @relation(fields: [user_id], references: [id])
   student_groups         Student_Group_Association[]
+  isPlaced               Boolean                     @default(false)
+  internshipApplications InternshipApplication[]
 }
 
 model Teacher {
@@ -151,7 +176,7 @@ model Recruiter {
   is_active    Boolean      @default(true)
   created_at   DateTime     @default(now())
   updated_at   DateTime     @updatedAt
-  Internship   Internship[]
+  internships  Internship[]
   user         User         @relation(fields: [user_id], references: [id])
 }
 
@@ -176,6 +201,7 @@ model Document {
   document_description        Json
   document_url                String
   created_at                  DateTime @default(now())
+  skills                      String[] @default([])
   student                     Student  @relation(fields: [student_registration_number], references: [registration_number])
 }
 
@@ -248,13 +274,30 @@ model TeacherRole {
 }
 
 model Group {
-  group_name String?
-  group_id   Int                         @id @default(autoincrement())
-  teachers   Group_Teacher_Association[]
-  projects   Project_Group_Association[]
-  students   Student_Group_Association[]
+  group_name  String?
+  group_id    Int                         @id @default(autoincrement())
+  invitations Group_Invitation[]
+  teachers    Group_Teacher_Association[]
+  projects    Project_Group_Association[]
+  students    Student_Group_Association[]
 
   @@map("Group")
+}
+
+model Group_Invitation {
+  id          Int      @id @default(autoincrement())
+  group_id    Int
+  sender_id   String
+  receiver_id String
+  status      String   @default("PENDING")
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  description String?
+  group       Group    @relation(fields: [group_id], references: [group_id])
+  receiver    Student  @relation("ReceivedInvitations", fields: [receiver_id], references: [registration_number])
+  sender      Student  @relation("SentInvitations", fields: [sender_id], references: [registration_number])
+
+  @@map("Group_Invitation")
 }
 
 model Project_Group_Association {
@@ -343,7 +386,7 @@ model RolePermission {
 }
 
 model Logs {
-  id         String   @id @default(dbgenerated("(gen_random_uuid())::text"))
+  id         String   @id @default(cuid())
   created_at DateTime @default(now())
   identifier String?
   type       String   @default("INFO")
@@ -354,7 +397,7 @@ model Logs {
 }
 
 model Internship {
-  id          String    @id
+  id          String    @id @default(cuid())
   title       String
   company     String
   description String
@@ -370,22 +413,22 @@ model Internship {
   deadline    DateTime
   applicants  Int       @default(0)
   created_at  DateTime  @default(now())
-  updated_at  DateTime
-  Recruiter   Recruiter @relation(fields: [posted_by], references: [id], onDelete: Cascade)
+  updated_at  DateTime  @updatedAt
+  postedBy    Recruiter @relation(fields: [posted_by], references: [id], onDelete: Cascade)
+  applications InternshipApplication[]
+  @@map("Internship")
 }
 
-model Invite_Magic_Token {
-  id                                               String    @id
-  user_id                                          String
-  created_by_user_id                               String
-  token_hash                                       String    @unique
-  jti                                              String    @unique
-  expires_at                                       DateTime
-  used_at                                          DateTime?
-  custom_message                                   String?
-  created_at                                       DateTime  @default(now())
-  User_Invite_Magic_Token_created_by_user_idToUser User      @relation("Invite_Magic_Token_created_by_user_idToUser", fields: [created_by_user_id], references: [id], onDelete: Cascade)
-  User_Invite_Magic_Token_user_idToUser            User      @relation("Invite_Magic_Token_user_idToUser", fields: [user_id], references: [id], onDelete: Cascade)
+model InternshipApplication {
+  id            String   @id @default(uuid())
+  studentId     String
+  internshipId  String
+  status        String   @default("APPLIED")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  student       Student     @relation(fields: [studentId], references: [registration_number])
+  internship    Internship  @relation(fields: [internshipId], references: [id])
 }
 
 enum Phase_Status {

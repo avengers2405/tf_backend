@@ -1,7 +1,5 @@
 // controllers/studentController.js
 import { prisma } from "../db/index.js";
-<<<<<<< HEAD
-=======
 
 const NON_EDITABLE_FIELDS = new Set([
   "registration_number",
@@ -203,12 +201,11 @@ const sanitizeStudentResponse = (student) => {
 };
 
 const getUserIdFromRequest = (req) => req.user?.sub;
->>>>>>> 58e10535beabcae103e33e812e1c5650cb7e2636
 
 export const getAllStudents = async (req, res) => {
   try {
     const students = await prisma.student.findMany();
-    console.log("Students",students);
+    console.log("Students", students);
     const formattedStudents = students.map(s => ({
       id: s.registration_number,
       registration_number: s.registration_number,
@@ -242,7 +239,7 @@ export const getAllStudents = async (req, res) => {
 export const updateStudentSkills = async (req, res) => {
   try {
     const { username, skills } = req.body;
-    console.log("Update Student",username);
+    console.log("Update Student", username);
     if (!username || !skills) {
       return res.status(400).json({ error: "Username and skills required" });
     }
@@ -271,7 +268,7 @@ export const updateStudentSkills = async (req, res) => {
 export const getStudentSkills = async (req, res) => {
   try {
     // Extract username from the request body (similar to updateStudentSkills)
-    const { username } = req.body; 
+    const { username } = req.body;
     console.log("Get skills for student:", username);
 
     if (!username) {
@@ -281,10 +278,10 @@ export const getStudentSkills = async (req, res) => {
     // Fetch only the skills field for efficiency
     const student = await prisma.student.findUnique({
       where: {
-        user_id: username, 
+        user_id: username,
       },
       select: {
-        skills: true, 
+        skills: true,
       },
     });
 
@@ -299,8 +296,6 @@ export const getStudentSkills = async (req, res) => {
   } catch (error) {
     console.error("Get student skills error:", error);
     res.status(500).json({ error: "Failed to fetch student skills" });
-<<<<<<< HEAD
-=======
   }
 };
 
@@ -446,6 +441,5 @@ export const updateMyStudentProfile = async (req, res) => {
   } catch (error) {
     console.error("Update student profile error:", error);
     return res.status(500).json({ error: "Failed to update student profile" });
->>>>>>> 58e10535beabcae103e33e812e1c5650cb7e2636
   }
 };

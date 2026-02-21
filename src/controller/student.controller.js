@@ -205,7 +205,7 @@ const getUserIdFromRequest = (req) => req.user?.sub;
 export const getAllStudents = async (req, res) => {
   try {
     const students = await prisma.student.findMany();
-    console.log("Students",students);
+    console.log("Students", students);
     const formattedStudents = students.map(s => ({
       id: s.registration_number,
       registration_number: s.registration_number,
@@ -239,7 +239,7 @@ export const getAllStudents = async (req, res) => {
 export const updateStudentSkills = async (req, res) => {
   try {
     const { username, skills } = req.body;
-    console.log("Update Student",username);
+    console.log("Update Student", username);
     if (!username || !skills) {
       return res.status(400).json({ error: "Username and skills required" });
     }
@@ -268,7 +268,7 @@ export const updateStudentSkills = async (req, res) => {
 export const getStudentSkills = async (req, res) => {
   try {
     // Extract username from the request body (similar to updateStudentSkills)
-    const { username } = req.body; 
+    const { username } = req.body;
     console.log("Get skills for student:", username);
 
     if (!username) {
@@ -278,10 +278,10 @@ export const getStudentSkills = async (req, res) => {
     // Fetch only the skills field for efficiency
     const student = await prisma.student.findUnique({
       where: {
-        user_id: username, 
+        user_id: username,
       },
       select: {
-        skills: true, 
+        skills: true,
       },
     });
 

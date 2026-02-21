@@ -12,7 +12,7 @@ import requireRole from "../middleware/requireRole.js";
 const router = Router();
 
 router.get("/students", getAllStudents);
-router.put("/students/update-skills", updateStudentSkills); 
+router.put("/students/update-skills", updateStudentSkills);
 // this gets the skills for a specific student, using username as a parameter
 router.get('/get-skills', getStudentSkills)
 

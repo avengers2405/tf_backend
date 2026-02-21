@@ -17,6 +17,7 @@ import teamBuilderRoutes from "./routes/team-builder.routes.js";
 import logger from "./services/logger.js";
 import postOpportunity from "./routes/post-opportunity.routes.js";
 import inviteRoutes from "./routes/invite.routes.js";
+import internshipRoutes from "./routes/internshipRotues.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -83,7 +84,7 @@ app.post('/drives', (req, res) =>
 
 app.use("/resumeParser", resumeParserRoutes);
 app.use("/resume", resumeRoutes);
-
+app.use("/api/internships", internshipRoutes)
 app.use("/logs", logsRoutes);
 
 app.listen(PORT, () => {

@@ -13,31 +13,50 @@ const authConfig = {
   accessCookieMaxAgeMs: Number(process.env.AUTH_ACCESS_COOKIE_MAX_AGE_MS) || 15 * 60 * 1000,
   refreshCookieMaxAgeMs: Number(process.env.AUTH_REFRESH_COOKIE_MAX_AGE_MS) || 30 * 24 * 60 * 60 * 1000,
   getAccessCookieOptions() {
-    return {
+    const options = {
       httpOnly: true,
-      secure: this.isProduction,
+      secure: this.isProduction || this.cookieSameSite === 'none',
       sameSite: this.cookieSameSite,
       path: '/',
       maxAge: this.accessCookieMaxAgeMs,
     };
+    
+    // Log cookie options in production for debugging
+    if (this.isProduction) {
+      console.log('Access cookie options:', JSON.stringify(options));
+    }
+    
+    return options;
   },
   getRefreshCookieOptions() {
-    return {
+    const options = {
       httpOnly: true,
-      secure: this.isProduction,
+      secure: this.isProduction || this.cookieSameSite === 'none',
       sameSite: this.cookieSameSite,
       path: '/',
       maxAge: this.refreshCookieMaxAgeMs,
     };
+    
+    if (this.isProduction) {
+      console.log('Refresh cookie options:', JSON.stringify(options));
+    }
+    
+    return options;
   },
   getRoleCookieOptions() {
-    return {
+    const options = {
       httpOnly: true,
-      secure: this.isProduction,
+      secure: this.isProduction || this.cookieSameSite === 'none',
       sameSite: this.cookieSameSite,
       path: '/',
       maxAge: this.refreshCookieMaxAgeMs,
     };
+    
+    if (this.isProduction) {
+      console.log('Role cookie options:', JSON.stringify(options));
+    }
+    
+    return options;
   },
 };
 

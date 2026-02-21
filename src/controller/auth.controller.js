@@ -4,25 +4,33 @@ import prisma from '../db/prisma.js';
 import emailService from '../services/emailService.js';
 
 function setSessionCookies(res, accessToken, refreshToken, role) {
+  const accessOptions = authConfig.getAccessCookieOptions();
+  const refreshOptions = authConfig.getRefreshCookieOptions();
+  const roleOptions = authConfig.getRoleCookieOptions();
+  
+  console.log('Setting cookies with sameSite:', authConfig.cookieSameSite, 'secure:', authConfig.isProduction);
+  
   res.cookie(
     authConfig.accessCookieName,
     accessToken,
-    authConfig.getAccessCookieOptions()
+    accessOptions
   );
 
   res.cookie(
     authConfig.refreshCookieName,
     refreshToken,
-    authConfig.getRefreshCookieOptions()
+    refreshOptions
   );
 
   if (role) {
     res.cookie(
       authConfig.roleCookieName,
       role,
-      authConfig.getRoleCookieOptions()
+      roleOptions
     );
   }
+  
+  console.log('Cookies set successfully');
 }
 
 function clearSessionCookies(res) {
@@ -226,6 +234,7 @@ class AuthController {
       const tokens = await authService.issueSessionTokens(user.id);
       const role = await authService.resolveUserRole(user.id);
 
+      console.log('Login successful for user:', user.id, 'role:', role);
       setSessionCookies(res, tokens.accessToken, tokens.refreshToken, role);
 
       res.status(200).json({

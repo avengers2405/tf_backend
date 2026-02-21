@@ -120,6 +120,8 @@ model Student {
     student_groups  Student_Group_Association[]
     drive_responses Drive_Response[]
     notifications   Notifications[]
+    sent_invitations     Group_Invitation[] @relation("SentInvitations")
+    received_invitations Group_Invitation[] @relation("ReceivedInvitations")
 
     created_at DateTime @default(now())
     updated_at DateTime @updatedAt
@@ -290,8 +292,26 @@ model Group {
     projects Project_Group_Association[]
     students Student_Group_Association[]
     teachers Group_Teacher_Association[]
+    invitations Group_Invitation[]
 
     @@map("Group")
+}
+
+model Group_Invitation {
+    id          Int      @id @default(autoincrement())
+    group_id    Int
+    sender_id   String
+    receiver_id String
+    status      String   @default("PENDING") // PENDING, ACCEPTED, REJECTED
+    created_at  DateTime @default(now())
+    updated_at  DateTime @updatedAt
+
+    // Relations
+    group       Group    @relation(fields: [group_id], references: [group_id])
+    sender      Student  @relation("SentInvitations", fields: [sender_id], references: [registration_number])
+    receiver    Student  @relation("ReceivedInvitations", fields: [receiver_id], references: [registration_number])
+
+    @@map("Group_Invitation")
 }
 
 model Project_Group_Association {

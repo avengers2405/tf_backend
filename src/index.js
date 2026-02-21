@@ -27,6 +27,9 @@ app.use(cors({
   origin: process.env.FRONTEND_URL ?? "http://localhost:3000",
   credentials: true,
 }));
+
+logger.log("Using CORS with origin:", process.env.FRONTEND_URL ?? "http://localhost:3000");
+
 app.use(cookieParser());
 app.use(express.json());
 

@@ -49,64 +49,66 @@ model Auth_Session {
 }
 
 model Student {
-  registration_number    String                      @id
-  prn_number             String?                     @unique
-  user_id                String                      @unique
-  te_roll_number         String?
-  be_roll_number         String?
-  cgpa                   Float
-  first_name             String?
-  middle_name            String?
-  last_name              String?
-  date_of_birth          DateTime                    @db.Date
-  gender                 Gender?
-  primary_email          String                      @unique
-  secondary_email        String?
-  student_email          String?
-  primary_phone          String?                     @unique
-  secondary_phone        String?
-  current_address        Json?
-  permanent_address      Json?
-  batch                  Int?
-  department             String?
-  x_class                Decimal?
-  x_class_board          String?
-  x_class_passing_year   Int?
-  x_gap_year             Int?                        @default(0)
-  x_gap_reason           String?
-  xii_class              Decimal?
-  xii_class_board        String?
-  xii_class_passing_year Int?
-  xii_gap_year           Int?                        @default(0)
-  xii_gap_reason         String?
-  diploma                Decimal?
-  diploma_university     String?
-  diploma_passing_year   Int?
-  diploma_gap_year       Int?                        @default(0)
-  diploma_gap_reason     String?
-  cet_percentile         Decimal?
-  jee_percentile         Decimal?
-  amcat_marks            Decimal?
-  amcat_details          Json?
-  active_backlog         Int                         @default(0)
-  active_backlog_sem     String?
-  passive_backlog        Int                         @default(0)
-  yd                     Boolean                     @default(false)
-  aadhar_number          String?
-  pan_number             String?
-  passport               String?
-  citizenship            String?
-  higher_education_plans Boolean                     @default(false)
-  te_fee_link            String?
-  be_fee_link            String?
-  created_at             DateTime                    @default(now())
-  updated_at             DateTime                    @updatedAt
-  skills                 String[]
-  documents              Document[]
-  drive_responses        Drive_Response[]
-  notifications          Notifications[]
-  user                   User                        @relation(fields: [user_id], references: [id])
-  student_groups         Student_Group_Association[]
+  registration_number                                    String                      @id
+  prn_number                                             String?                     @unique
+  user_id                                                String                      @unique
+  te_roll_number                                         String?
+  be_roll_number                                         String?
+  cgpa                                                   Float
+  first_name                                             String?
+  middle_name                                            String?
+  last_name                                              String?
+  date_of_birth                                          DateTime                    @db.Date
+  gender                                                 Gender?
+  primary_email                                          String                      @unique
+  secondary_email                                        String?
+  student_email                                          String?
+  primary_phone                                          String?                     @unique
+  secondary_phone                                        String?
+  current_address                                        Json?
+  permanent_address                                      Json?
+  batch                                                  Int?
+  department                                             String?
+  x_class                                                Decimal?
+  x_class_board                                          String?
+  x_class_passing_year                                   Int?
+  x_gap_year                                             Int?                        @default(0)
+  x_gap_reason                                           String?
+  xii_class                                              Decimal?
+  xii_class_board                                        String?
+  xii_class_passing_year                                 Int?
+  xii_gap_year                                           Int?                        @default(0)
+  xii_gap_reason                                         String?
+  diploma                                                Decimal?
+  diploma_university                                     String?
+  diploma_passing_year                                   Int?
+  diploma_gap_year                                       Int?                        @default(0)
+  diploma_gap_reason                                     String?
+  cet_percentile                                         Decimal?
+  jee_percentile                                         Decimal?
+  amcat_marks                                            Decimal?
+  amcat_details                                          Json?
+  active_backlog                                         Int                         @default(0)
+  active_backlog_sem                                     String?
+  passive_backlog                                        Int                         @default(0)
+  yd                                                     Boolean                     @default(false)
+  aadhar_number                                          String?
+  pan_number                                             String?
+  passport                                               String?
+  citizenship                                            String?
+  higher_education_plans                                 Boolean                     @default(false)
+  te_fee_link                                            String?
+  be_fee_link                                            String?
+  created_at                                             DateTime                    @default(now())
+  updated_at                                             DateTime                    @updatedAt
+  skills                                                 String[]
+  documents                                              Document[]
+  drive_responses                                        Drive_Response[]
+  Group_Invitation_Group_Invitation_receiver_idToStudent Group_Invitation[]          @relation("Group_Invitation_receiver_idToStudent")
+  Group_Invitation_Group_Invitation_sender_idToStudent   Group_Invitation[]          @relation("Group_Invitation_sender_idToStudent")
+  notifications                                          Notifications[]
+  user                                                   User                        @relation(fields: [user_id], references: [id])
+  student_groups                                         Student_Group_Association[]
 }
 
 model Teacher {
@@ -248,11 +250,12 @@ model TeacherRole {
 }
 
 model Group {
-  group_name String?
-  group_id   Int                         @id @default(autoincrement())
-  teachers   Group_Teacher_Association[]
-  projects   Project_Group_Association[]
-  students   Student_Group_Association[]
+  group_name       String?
+  group_id         Int                         @id @default(autoincrement())
+  Group_Invitation Group_Invitation[]
+  teachers         Group_Teacher_Association[]
+  projects         Project_Group_Association[]
+  students         Student_Group_Association[]
 
   @@map("Group")
 }
@@ -343,7 +346,7 @@ model RolePermission {
 }
 
 model Logs {
-  id         String   @id @default(dbgenerated("(gen_random_uuid())::text"))
+  id         String   @id @default(cuid())
   created_at DateTime @default(now())
   identifier String?
   type       String   @default("INFO")
@@ -374,18 +377,36 @@ model Internship {
   Recruiter   Recruiter @relation(fields: [posted_by], references: [id], onDelete: Cascade)
 }
 
+model Group_Invitation {
+  id                                            Int      @id @default(autoincrement())
+  group_id                                      Int
+  sender_id                                     String
+  receiver_id                                   String
+  status                                        String   @default("PENDING")
+  created_at                                    DateTime @default(now())
+  updated_at                                    DateTime
+  Group                                         Group    @relation(fields: [group_id], references: [group_id])
+  Student_Group_Invitation_receiver_idToStudent Student  @relation("Group_Invitation_receiver_idToStudent", fields: [receiver_id], references: [registration_number])
+  Student_Group_Invitation_sender_idToStudent   Student  @relation("Group_Invitation_sender_idToStudent", fields: [sender_id], references: [registration_number])
+}
+
 model Invite_Magic_Token {
   id                                               String    @id
   user_id                                          String
-  created_by_user_id                               String
+  recipient_email                                  String
+  created_by_user_id                               String?
+  custom_message                                   String?
   token_hash                                       String    @unique
   jti                                              String    @unique
   expires_at                                       DateTime
   used_at                                          DateTime?
-  custom_message                                   String?
   created_at                                       DateTime  @default(now())
-  User_Invite_Magic_Token_created_by_user_idToUser User      @relation("Invite_Magic_Token_created_by_user_idToUser", fields: [created_by_user_id], references: [id], onDelete: Cascade)
+  User_Invite_Magic_Token_created_by_user_idToUser User?     @relation("Invite_Magic_Token_created_by_user_idToUser", fields: [created_by_user_id], references: [id])
   User_Invite_Magic_Token_user_idToUser            User      @relation("Invite_Magic_Token_user_idToUser", fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model Temp {
+  id String @id
 }
 
 enum Phase_Status {

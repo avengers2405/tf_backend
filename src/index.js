@@ -22,18 +22,15 @@ const PORT = process.env.PORT || 5000;
 
 validateAuthConfig();
 
-// Middleware configuration - TEMPORARILY OPEN FOR DEBUGGING
 app.use(cors({
-  origin: true, // Allow all origins
+  origin: process.env.FRONTEND_URL ?? "http://localhost:3000",
   credentials: true,
-  methods: ['*'],
-  allowedHeaders: ['*'],
-  exposedHeaders: ['Set-Cookie', '*'],
-  optionsSuccessStatus: 204
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Set-Cookie']
 }));
 
-logger.log("⚠️  CORS FULLY OPEN - ALL ORIGINS ALLOWED (TEMPORARY)");
-logger.log("Primary origin:", process.env.FRONTEND_URL ?? "http://localhost:3000");
+logger.log("Using CORS with origin:", process.env.FRONTEND_URL ?? "http://localhost:3000");
 logger.log("NODE_ENV:", process.env.NODE_ENV);
 logger.log("AUTH_COOKIE_SAMESITE:", process.env.AUTH_COOKIE_SAMESITE);
 

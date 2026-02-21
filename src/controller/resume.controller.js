@@ -38,6 +38,16 @@ export const uploadResume = async (req, res) => {
     });
   }
   
+  let parsedSkills = [];
+    if (req.body.skills) {
+      try {
+        parsedSkills = JSON.parse(req.body.skills);
+      } catch (parseError) {
+        console.error('Failed to parse skills array:', parseError);
+        // If parsing fails, it defaults to the empty array
+      }
+    }
+
   try {
     // Check if file is present in the request
     if (!req.file) {
@@ -87,7 +97,8 @@ export const uploadResume = async (req, res) => {
         student_registration_number: req.student.registration_number,
         name: `${randomName}.pdf`,
         document_description: { type: "resume" },
-        document_url: fileName
+        document_url: fileName,
+        skills: parsedSkills
       }
     });
 

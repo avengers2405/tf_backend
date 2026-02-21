@@ -7,24 +7,22 @@ datasource db {
   provider = "postgresql"
 }
 
-// Defining users: students, teachers, etc.
 model User {
-  id          String   @id @default(cuid())
-  username    String   @unique
-  email       String   @unique
-  password    String // would contain hashed value
-  is_verified Boolean  @default(false)
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-
-  student           Student?
-  teacher           Teacher?
-  tnp               Tnp?
-  recruiter         Recruiter?
-  auth_magic_tokens Auth_Magic_Token[]
-  auth_sessions     Auth_Session[]
-  invite_magic_tokens Invite_Magic_Token[] @relation("InviteRecipientTokens")
+  id                          String               @id @default(cuid())
+  username                    String               @unique
+  password                    String
+  created_at                  DateTime             @default(now())
+  updated_at                  DateTime             @updatedAt
+  is_verified                 Boolean              @default(false)
+  email                       String               @unique
+  auth_magic_tokens           Auth_Magic_Token[]
+  auth_sessions               Auth_Session[]
   invite_magic_tokens_created Invite_Magic_Token[] @relation("InviteCreatedTokens")
+  invite_magic_tokens         Invite_Magic_Token[] @relation("InviteRecipientTokens")
+  recruiter                   Recruiter?
+  student                     Student?
+  teacher                     Teacher?
+  tnp                         Tnp?
 }
 
 model Temp {
@@ -39,8 +37,7 @@ model Auth_Magic_Token {
   expires_at DateTime
   used_at    DateTime?
   created_at DateTime  @default(now())
-
-  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }
 
 model Invite_Magic_Token {
@@ -49,16 +46,14 @@ model Invite_Magic_Token {
   recipient_email    String
   created_by_user_id String?
   custom_message     String?
-  target_role        String    @default("recruiter") // recruiter, teacher, etc.
   token_hash         String    @unique
   jti                String    @unique
   expires_at         DateTime
   used_at            DateTime?
   created_at         DateTime  @default(now())
-
-  user       User  @relation("InviteRecipientTokens", fields: [user_id], references: [id], onDelete: Cascade)
-  created_by User? @relation("InviteCreatedTokens", fields: [created_by_user_id], references: [id], onDelete: SetNull)
-
+  target_role        String    @default("recruiter")
+  created_by         User?     @relation("InviteCreatedTokens", fields: [created_by_user_id], references: [id])
+  user               User      @relation("InviteRecipientTokens", fields: [user_id], references: [id], onDelete: Cascade)
 }
 
 model Auth_Session {
@@ -70,101 +65,87 @@ model Auth_Session {
   revoked_at         DateTime?
   created_at         DateTime  @default(now())
   updated_at         DateTime  @updatedAt
-
-  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user               User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }
 
 model Student {
-  registration_number String  @id
-  prn_number          String? @unique
-  user_id             String  @unique
-  te_roll_number      String?
-  be_roll_number      String?
-  cgpa                Float
-
-  first_name    String?
-  middle_name   String?
-  last_name     String?
-  date_of_birth DateTime @db.Date
-  gender        Gender?
-
-  primary_email     String  @unique
-  secondary_email   String?
-  student_email     String?
-  primary_phone     String? @unique
-  secondary_phone   String?
-  current_address   Json?
-  permanent_address Json?
-
-  batch      Int?
-  department String?
-
-  x_class              Decimal?
-  x_class_board        String?
-  x_class_passing_year Int?
-  x_gap_year           Int?     @default(0)
-  x_gap_reason         String? // only if x_gap_year exists
-
-  xii_class              Decimal? // xii_class and diploma cannot coexist
-  xii_class_board        String? // if xii_class exists
-  xii_class_passing_year Int? // if xii_class exists
-  xii_gap_year           Int?     @default(0) // if xii_class exists
-  xii_gap_reason         String? // if xii_gap_year exists
-
-  diploma              Decimal? // can be converted to jsonb if they contain other info like school, year of passing, etc.
-  diploma_university   String? // if diploma exists
-  diploma_passing_year Int? // if diploma exists
-  diploma_gap_year     Int?     @default(0) // if diploma exists
-  diploma_gap_reason   String?
-
-  cet_percentile Decimal?
-  jee_percentile Decimal?
-  amcat_marks    Decimal?
-  amcat_details  Json?
-
-  active_backlog     Int     @default(0)
-  active_backlog_sem String? // only if activebacklog > 0
-  passive_backlog    Int     @default(0)
-  yd                 Boolean @default(false) // only if activebacklog || passivebacklog
-
+  registration_number    String                      @id
+  prn_number             String?                     @unique
+  user_id                String                      @unique
+  te_roll_number         String?
+  be_roll_number         String?
+  cgpa                   Float
+  first_name             String?
+  middle_name            String?
+  last_name              String?
+  date_of_birth          DateTime                    @db.Date
+  gender                 Gender?
+  primary_email          String                      @unique
+  secondary_email        String?
+  student_email          String?
+  primary_phone          String?                     @unique
+  secondary_phone        String?
+  current_address        Json?
+  permanent_address      Json?
+  batch                  Int?
+  department             String?
+  x_class                Decimal?
+  x_class_board          String?
+  x_class_passing_year   Int?
+  x_gap_year             Int?                        @default(0)
+  x_gap_reason           String?
+  xii_class              Decimal?
+  xii_class_board        String?
+  xii_class_passing_year Int?
+  xii_gap_year           Int?                        @default(0)
+  xii_gap_reason         String?
+  diploma                Decimal?
+  diploma_university     String?
+  diploma_passing_year   Int?
+  diploma_gap_year       Int?                        @default(0)
+  diploma_gap_reason     String?
+  cet_percentile         Decimal?
+  jee_percentile         Decimal?
+  amcat_marks            Decimal?
+  amcat_details          Json?
+  active_backlog         Int                         @default(0)
+  active_backlog_sem     String?
+  passive_backlog        Int                         @default(0)
+  yd                     Boolean                     @default(false)
   aadhar_number          String?
   pan_number             String?
   passport               String?
   citizenship            String?
-  higher_education_plans Boolean @default(false)
-
-  te_fee_link String?
-  be_fee_link String?
-
-  user                 User                        @relation(fields: [user_id], references: [id])
-  skills               String[]
-  documents            Document[]
-  student_groups       Student_Group_Association[]
-  drive_responses      Drive_Response[]
-  notifications        Notifications[]
-  sent_invitations     Group_Invitation[]          @relation("SentInvitations")
-  received_invitations Group_Invitation[]          @relation("ReceivedInvitations")
-
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  higher_education_plans Boolean                     @default(false)
+  te_fee_link            String?
+  be_fee_link            String?
+  created_at             DateTime                    @default(now())
+  updated_at             DateTime                    @updatedAt
+  skills                 String[]
+  documents              Document[]
+  drive_responses        Drive_Response[]
+  received_invitations   Group_Invitation[]          @relation("ReceivedInvitations")
+  sent_invitations       Group_Invitation[]          @relation("SentInvitations")
+  notifications          Notifications[]
+  user                   User                        @relation(fields: [user_id], references: [id])
+  student_groups         Student_Group_Association[]
 }
 
 model Teacher {
-  id         String   @id @default(cuid())
-  user_id    String   @unique
-  first_name String
-  last_name  String
-  email      String   @unique
-  phone      String   @unique
-  department String
-  is_active  Boolean  @default(true)
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-
-  user                   User          @relation(fields: [user_id], references: [id])
-  teacher_roles          TeacherRole[]
-  assigned_teacher_roles TeacherRole[] @relation("AssignedBy")
+  id                     String        @id @default(cuid())
+  user_id                String        @unique
+  first_name             String
+  last_name              String
+  email                  String        @unique
+  phone                  String        @unique
+  department             String
+  is_active              Boolean       @default(true)
+  created_at             DateTime      @default(now())
+  updated_at             DateTime      @updatedAt
   supervised_projects    Project[]
+  user                   User          @relation(fields: [user_id], references: [id])
+  assigned_teacher_roles TeacherRole[] @relation("AssignedBy")
+  teacher_roles          TeacherRole[]
 }
 
 model Tnp {
@@ -177,8 +158,7 @@ model Tnp {
   is_active  Boolean  @default(true)
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
-
-  user User @relation(fields: [user_id], references: [id])
+  user       User     @relation(fields: [user_id], references: [id])
 }
 
 model Recruiter {
@@ -194,70 +174,58 @@ model Recruiter {
   created_at   DateTime     @default(now())
   updated_at   DateTime     @updatedAt
   internships  Internship[]
-
-  user User @relation(fields: [user_id], references: [id])
+  user         User         @relation(fields: [user_id], references: [id])
 }
 
-// Defining skills, will be associated with students, projects, etc.
 model Skill {
-  id   String @id @default(cuid())
-  name String @unique
-
+  id             String                      @id @default(cuid())
+  name           String                      @unique
   student_skills Student_Skill_Association[]
 }
 
 model Student_Skill_Association {
   student_registration_number String
   skill_id                    String
-
-  // student Student @relation(fields: [student_registration_number], references: [registration_number])
-  skill Skill @relation(fields: [skill_id], references: [id])
+  skill                       Skill  @relation(fields: [skill_id], references: [id])
 
   @@id([student_registration_number, skill_id])
 }
 
-// general table to store document details, can be used for resumes, certificates, etc.
 model Document {
   id                          String   @id @default(cuid())
   student_registration_number String
   name                        String?
-  document_description        Json     // store all details 
+  document_description        Json
   document_url                String
-  skills                      String[] @default([]) // Added skills array with default
   created_at                  DateTime @default(now())
-
-  student Student @relation(fields: [student_registration_number], references: [registration_number])
+  skills                      String[] @default([])
+  student                     Student  @relation(fields: [student_registration_number], references: [registration_number])
 }
 
-// Tables to store data related to company offers (projects, intersnhips, etc.)
 model Company_Drive {
-  drive_id              String   @id @default(uuid())
+  drive_id              String           @id @default(uuid())
   company_name          String
   min_cgpa              Float
   registration_deadline DateTime
-  created_at            DateTime @default(now())
-  updated_at            DateTime @updatedAt
-
-  responses Drive_Response[]
+  created_at            DateTime         @default(now())
+  updated_at            DateTime         @updatedAt
+  responses             Drive_Response[]
 
   @@map("CompanyDrive")
 }
 
-// Table to store student responses
 model Drive_Response {
-  response_id   String    @id @default(uuid())
-  student_id    String
-  drive_id      String
-  is_interested Boolean?  @default(false)
-  responded_at  DateTime?
-  created_at    DateTime  @default(now())
-
+  response_id          String        @id @default(uuid())
+  student_id           String
+  drive_id             String
+  is_interested        Boolean?      @default(false)
+  responded_at         DateTime?
+  created_at           DateTime      @default(now())
   email_token_hash     String?
   token_expires_at     DateTime?
   notification_sent_at DateTime?
-
-  student Student       @relation(fields: [student_id], references: [registration_number])
-  drive   Company_Drive @relation(fields: [drive_id], references: [drive_id])
+  drive                Company_Drive @relation(fields: [drive_id], references: [drive_id])
+  student              Student       @relation(fields: [student_id], references: [registration_number])
 
   @@unique([student_id, drive_id])
   @@map("DriveResponse")
@@ -268,28 +236,24 @@ model Notifications {
   student_id String
   message    String
   created_at DateTime @default(now())
-
-  student Student @relation(fields: [student_id], references: [registration_number])
+  student    Student  @relation(fields: [student_id], references: [registration_number])
 }
 
 model Project {
-  project_id            Int       @id @default(autoincrement())
   title                 String
-  description           String    @db.Text
+  description           String
   technology_stack      String
   academic_year         String
-  repo_url              String?   @unique
+  repo_url              String?                     @unique
+  current_phase_id      Int?
+  supervisor_id         String?
+  project_id            Int                         @id @default(autoincrement())
   min_cgpa              Float?
   registration_deadline DateTime?
-
-  // Simplified: Just point to the Teacher's ID
-  supervisor_id String?
-  supervisor    Teacher? @relation(fields: [supervisor_id], references: [id])
-
-  current_phase_id Int?
-  phases           Project_Phase[]
-  groups           Project_Group_Association[]
-  git_logs         Git_logbook_entries[]
+  supervisor            Teacher?                    @relation(fields: [supervisor_id], references: [id])
+  groups                Project_Group_Association[]
+  phases                Project_Phase[]
+  git_logs              Git_logbook_entries[]
 
   @@map("Project")
 }
@@ -299,24 +263,20 @@ model TeacherRole {
   role_id        String
   assigned_by_id String?
   assigned_at    DateTime @default(now())
-
-  teacher     Teacher  @relation(fields: [teacher_id], references: [id])
-  role        Role     @relation(fields: [role_id], references: [id])
-  assigned_by Teacher? @relation("AssignedBy", fields: [assigned_by_id], references: [id])
+  assigned_by    Teacher? @relation("AssignedBy", fields: [assigned_by_id], references: [id])
+  role           Role     @relation(fields: [role_id], references: [id])
+  teacher        Teacher  @relation(fields: [teacher_id], references: [id])
 
   @@id([teacher_id, role_id])
 }
 
-// composed of student, teacher
 model Group {
-  group_id   Int     @id @default(autoincrement())
-  group_name String? // Added for better identification
-
-  // Relations
+  group_name  String?
+  group_id    Int                         @id @default(autoincrement())
+  invitations Group_Invitation[]
+  teachers    Group_Teacher_Association[]
   projects    Project_Group_Association[]
   students    Student_Group_Association[]
-  teachers    Group_Teacher_Association[]
-  invitations Group_Invitation[]
 
   @@map("Group")
 }
@@ -326,23 +286,22 @@ model Group_Invitation {
   group_id    Int
   sender_id   String
   receiver_id String
-  status      String   @default("PENDING") // PENDING, ACCEPTED, REJECTED
+  status      String   @default("PENDING")
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
-
-  // Relations
-  group    Group   @relation(fields: [group_id], references: [group_id])
-  sender   Student @relation("SentInvitations", fields: [sender_id], references: [registration_number])
-  receiver Student @relation("ReceivedInvitations", fields: [receiver_id], references: [registration_number])
+  description String?
+  group       Group    @relation(fields: [group_id], references: [group_id])
+  receiver    Student  @relation("ReceivedInvitations", fields: [receiver_id], references: [registration_number])
+  sender      Student  @relation("SentInvitations", fields: [sender_id], references: [registration_number])
 
   @@map("Group_Invitation")
 }
 
 model Project_Group_Association {
-  group_id   Int
   project_id Int
-  project    Project @relation(fields: [project_id], references: [project_id])
+  group_id   Int
   group      Group   @relation(fields: [group_id], references: [group_id])
+  project    Project @relation(fields: [project_id], references: [project_id])
 
   @@id([project_id, group_id])
   @@map("Project_Group_Association")
@@ -350,24 +309,17 @@ model Project_Group_Association {
 
 model Project_Phase {
   phase_id          Int          @default(autoincrement())
-  project_id        Int
   phase_name        String
-  phase_description String       @db.Text
+  phase_description String
   start_date        DateTime     @db.Date
   end_date          DateTime     @db.Date
   status            Phase_Status @default(OPEN)
   comments          String?
-
-  project Project @relation(fields: [project_id], references: [project_id], onDelete: Cascade)
+  project_id        Int
+  project           Project      @relation(fields: [project_id], references: [project_id], onDelete: Cascade)
 
   @@id([phase_id, project_id])
   @@map("Project_Phase")
-}
-
-enum Phase_Status {
-  OPEN
-  CLOSED
-  LOCKED
 }
 
 model Student_Group_Association {
@@ -389,103 +341,89 @@ model Group_Teacher_Association {
   @@map("Group_Teacher_Association")
 }
 
-// Git logbook data
-
 model Git_logbook_entries {
   id                   String   @id @default(uuid())
-  project_id           Int
   commit_id            String   @unique
-  commit_message       String   @db.Text
+  commit_message       String
   files_changed        Int      @default(0)
   difficulty_of_commit Int      @default(1)
   commit_timestamp     DateTime
-  pusher_name          String
-  is_anomaly           Boolean  @default(false)
-  anomaly_reason       String?
   received_at          DateTime @default(now())
-
-  // Relations
-  project Project @relation(fields: [project_id], references: [project_id])
+  anomaly_reason       String?
+  is_anomaly           Boolean  @default(false)
+  pusher_name          String
+  project_id           Int
+  project              Project  @relation(fields: [project_id], references: [project_id])
 
   @@map("git_logbook_entries")
 }
 
-// RBAC 
-
 model Role {
-  id          String @id @default(cuid())
-  name        String
-  description String
-
-  teacher_roles    TeacherRole[]
+  id               String           @id @default(cuid())
+  name             String
+  description      String
   role_permissions RolePermission[]
+  teacher_roles    TeacherRole[]
 }
 
 model Permission {
-  id          String  @id @default(cuid())
-  name        String
-  description String?
-
+  id               String           @id @default(cuid())
+  name             String
+  description      String?
   role_permissions RolePermission[]
 }
 
 model RolePermission {
   role_id       String
   permission_id String
-
-  role       Role       @relation(fields: [role_id], references: [id])
-  permission Permission @relation(fields: [permission_id], references: [id])
+  permission    Permission @relation(fields: [permission_id], references: [id])
+  role          Role       @relation(fields: [role_id], references: [id])
 
   @@id([role_id, permission_id])
+}
+
+model Logs {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  identifier String?
+  type       String   @default("INFO")
+  source     String?
+  data       Json
+
+  @@map("Logs")
+}
+
+model Internship {
+  id          String    @id @default(cuid())
+  title       String
+  company     String
+  description String
+  stipend     String?
+  duration    String?
+  skills      String[]
+  tags        String[]
+  min_cgpa    Float?
+  departments String[]
+  years       Int[]
+  posted_by   String
+  posted_date DateTime  @default(now())
+  deadline    DateTime
+  applicants  Int       @default(0)
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  postedBy    Recruiter @relation(fields: [posted_by], references: [id], onDelete: Cascade)
+
+  @@map("Internship")
+}
+
+enum Phase_Status {
+  OPEN
+  CLOSED
+  LOCKED
 }
 
 enum Gender {
   Male
   Female
   Other
-}
-
-model Logs {
-  id         String   @id @default(cuid())
-  created_at DateTime @default(now())
-  identifier String? // Custom tag for searching logs
-  type       String   @default("INFO") // Log type (INFO, ERROR, WARNING, etc.)
-  source     String? // Source of the log
-  data       Json // Log payload (string or JSON object)
-
-  @@map("Logs")
-}
-
-model Internship {
-  id          String @id @default(cuid())
-  title       String
-  company     String
-  description String @db.Text
-
-  // Internship specific metadata
-  stipend  String?
-  duration String?
-
-  // Skills & tags
-  skills String[]
-  tags   String[]
-
-  // Eligibility criteria
-  min_cgpa    Float?
-  departments String[]
-  years       Int[]
-
-  // Posting info
-  posted_by   String
-  posted_date DateTime @default(now())
-  deadline    DateTime
-
-  applicants Int @default(0)
-
-  // Relations
-  postedBy   Recruiter @relation(fields: [posted_by], references: [id], onDelete: Cascade)
-  created_at DateTime  @default(now())
-  updated_at DateTime  @updatedAt
-
-  @@map("Internship")
 }

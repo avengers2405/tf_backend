@@ -22,13 +22,17 @@ const PORT = process.env.PORT || 5000;
 
 validateAuthConfig();
 
-// Middleware configuration
 app.use(cors({
   origin: process.env.FRONTEND_URL ?? "http://localhost:3000",
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Set-Cookie']
 }));
 
 logger.log("Using CORS with origin:", process.env.FRONTEND_URL ?? "http://localhost:3000");
+logger.log("NODE_ENV:", process.env.NODE_ENV);
+logger.log("AUTH_COOKIE_SAMESITE:", process.env.AUTH_COOKIE_SAMESITE);
 
 app.use(cookieParser());
 app.use(express.json());

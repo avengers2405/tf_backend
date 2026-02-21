@@ -1,4 +1,4 @@
-import fileStorageService from "../services/fileStorageService.js";
+ import fileStorageService from "../services/fileStorageService.js";
 import { spawn } from "child_process";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -319,6 +319,53 @@ export const downloadResume = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Failed to download resume',
+      error: error.message
+    });
+  }
+};
+
+
+export const listAllResumes = async (req, res) => {
+  logger.log("Endpoint has been hit: ", "/resume/list-all");
+  
+  // Strict check: Only teachers should be able to pull every student's resume
+  // if (req.cookies.user_role !== 'teacher' || !req.teacher?.id) {
+    // logger.error("Unauthorized access attempt to listAllResumes by role: ", req.cookies.user_role);
+    // return res.status(403).json({
+    //   success: false,
+    //   message: 'Forbidden: Only teachers are allowed to access the global resume list'
+    // });
+  // }
+  
+  try {
+    // Fetch all documents from the database
+    const documents = await prisma.document.findMany({
+      select: {
+        id: true,
+        student_registration_number: true, // Crucial for identifying the owner
+        name: true,
+        document_description: true,
+        document_url: true,
+        created_at: true
+      },
+      // Group them logically by student, then sort by newest first
+      orderBy: [
+        { student_registration_number: 'asc' },
+        { created_at: 'desc' }
+      ]
+    });
+    
+    return res.status(200).json({
+      success: true,
+      count: documents.length,
+      documents: documents
+    });
+    
+  } catch (error) {
+    console.error('Error listing all resumes:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to list all resumes',
       error: error.message
     });
   }

@@ -115,7 +115,7 @@ model Student {
     be_fee_link String?
 
     user            User                        @relation(fields: [user_id], references: [id])
-    student_skills  Student_Skill_Association[]
+    skills          String[]
     documents       Document[]
     student_groups  Student_Group_Association[]
     drive_responses Drive_Response[]
@@ -168,6 +168,7 @@ model Recruiter {
     is_active    Boolean  @default(true)
     created_at   DateTime @default(now())
     updated_at   DateTime @updatedAt
+    internships Internship[]
 
     user User @relation(fields: [user_id], references: [id])
 }
@@ -184,7 +185,7 @@ model Student_Skill_Association {
     student_registration_number String
     skill_id                    String
 
-    student Student @relation(fields: [student_registration_number], references: [registration_number])
+    // student Student @relation(fields: [student_registration_number], references: [registration_number])
     skill   Skill   @relation(fields: [skill_id], references: [id])
 
     @@id([student_registration_number, skill_id])
@@ -245,7 +246,7 @@ model Notifications {
     student Student @relation(fields: [student_id], references: [registration_number])
 }
 
-// All projects
+
 model Project {
     project_id       Int          @id @default(autoincrement())
     title            String
@@ -253,8 +254,8 @@ model Project {
     technology_stack String
     academic_year    String
     repo_url         String?  @unique
-    min_cgpa              Float
-    registration_deadline DateTime
+    min_cgpa              Float?
+    registration_deadline DateTime?
 
     // Simplified: Just point to the Teacher's ID
     supervisor_id    String?
@@ -410,4 +411,38 @@ model Logs {
     data       Json // Log payload (string or JSON object)
 
     @@map("Logs")
+}
+
+model Internship {
+    id          String   @id @default(cuid())
+    title       String
+    company     String
+    description String   @db.Text
+
+    // Internship specific metadata
+    stipend     String?
+    duration    String?
+
+    // Skills & tags
+    skills      String[]
+    tags        String[]
+
+    // Eligibility criteria
+    min_cgpa    Float?
+    departments String[]
+    years       Int[]
+
+    // Posting info
+    posted_by   String
+    posted_date DateTime @default(now())
+    deadline    DateTime
+
+    applicants  Int      @default(0)
+
+    // Relations
+    postedBy   Recruiter @relation(fields: [posted_by], references: [id], onDelete: Cascade)
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+
+    @@map("Internship")
 }

@@ -5,7 +5,7 @@ const prisma_ = prisma;
 export const getCommitsByProjectId = async (req, res) => {
   const { projectId } = req.params;
   const commits = await prisma_.git_logbook_entries.findMany({
-    where: { project_id: projectId },
+    where: { project_id: Number(projectId) },
     orderBy: { commit_timestamp: 'desc' }
   });
   res.json({ success: true, data: commits });

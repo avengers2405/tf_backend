@@ -3,6 +3,7 @@ import {
   getAllInternships,
   getInternshipById,
   createInternship,
+  applyForInternship
 } from "../controller/internshipController.js";
 
 const router = express.Router()
@@ -15,5 +16,6 @@ router.get("/:id", getInternshipById)
 
 // Post internship
 router.post("/", createInternship)
+router.post("/:id/apply", applyForInternship)
 
 export default router

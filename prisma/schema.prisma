@@ -23,6 +23,8 @@ model User {
   recruiter         Recruiter?
   auth_magic_tokens Auth_Magic_Token[]
   auth_sessions     Auth_Session[]
+  invite_magic_tokens Invite_Magic_Token[] @relation("InviteRecipientTokens")
+  invite_magic_tokens_created Invite_Magic_Token[] @relation("InviteCreatedTokens")
 }
 
 model Temp {
@@ -39,6 +41,24 @@ model Auth_Magic_Token {
   created_at DateTime  @default(now())
 
   user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model Invite_Magic_Token {
+  id                 String    @id @default(cuid())
+  user_id            String
+  recipient_email    String
+  created_by_user_id String?
+  custom_message     String?
+  target_role        String    @default("recruiter") // recruiter, teacher, etc.
+  token_hash         String    @unique
+  jti                String    @unique
+  expires_at         DateTime
+  used_at            DateTime?
+  created_at         DateTime  @default(now())
+
+  user       User  @relation("InviteRecipientTokens", fields: [user_id], references: [id], onDelete: Cascade)
+  created_by User? @relation("InviteCreatedTokens", fields: [created_by_user_id], references: [id], onDelete: SetNull)
+
 }
 
 model Auth_Session {
@@ -201,8 +221,9 @@ model Document {
   id                          String   @id @default(cuid())
   student_registration_number String
   name                        String?
-  document_description        Json // store all details 
+  document_description        Json     // store all details 
   document_url                String
+  skills                      String[] @default([]) // Added skills array with default
   created_at                  DateTime @default(now())
 
   student Student @relation(fields: [student_registration_number], references: [registration_number])

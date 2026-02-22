@@ -6,7 +6,7 @@ import {
   createInternship,
   applyForInternship,
 
-  getStudentApplications
+  getStudentApplications,
 
   selectStudent,
   checkIfPlaced

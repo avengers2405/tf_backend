@@ -269,8 +269,7 @@ export const updateStudentSkills = async (req, res) => {
 export const getStudentSkills = async (req, res) => {
   try {
     // Extract username from the request body (similar to updateStudentSkills)
-    const { username } = req.body;
-    console.log("Get skills for student:", username);
+    const { username } = req.query; // <--- CHANGED THIS LINE    console.log("Get skills for student:", username);
 
     if (!username) {
       return res.status(400).json({ error: "Username is required" });

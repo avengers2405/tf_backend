@@ -1,5 +1,4 @@
 import express from "express";
-import cors from "cors";
 import {
   getAllInternships,
   getInternshipById,
@@ -14,15 +13,6 @@ import {
 } from "../controller/internshipController.js";
 
 const router = express.Router();
-
-// Add CORS middleware
-router.use(cors({
-  origin: process.env.FRONTEND_URL ?? "http://localhost:3000",
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
-
 
 // Get all internships
 router.get("/", getAllInternships)

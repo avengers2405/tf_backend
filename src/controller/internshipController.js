@@ -295,12 +295,8 @@ export const getInternshipById = async (req, res) => {
             email: true,
           },
         },
-        // THIS IS THE FILTER: It only fetches rows where status is exactly "APPLIED"
+        // REMOVED the status: "APPLIED" filter here
         applications: {
-          where: {
-            status: "APPLIED" || "SELECTED"
-          },
-
           include: {
             student: {
               select: {
@@ -440,25 +436,25 @@ export const applyForInternship = async (req, res) => {
 // };
 // internshipController.js
 export const getStudentApplications = async (req, res) => {
-  // Use 'id' because that's what is defined in your router (:id)
   const { id } = req.params; 
   
-  console.log("Fetching applications for User ID:", id);
+  console.log("Fetching APPLIED applications for User ID:", id);
 
   try {
     // 1. Find the student record using the ID from the URL
     const student = await prisma.student.findUnique({
-      where: { user_id: id } // 'id' here contains 'student_user'
+      where: { user_id: id } 
     });
 
     if (!student) {
       return res.status(404).json({ message: "Student record not found" });
     }
 
-    // 2. Fetch applications for this student
+    // 2. Fetch applications for this student FILTERED by status
     const applications = await prisma.internshipApplication.findMany({
       where: {
-        studentId: student.registration_number
+        studentId: student.registration_number,
+        status: "APPLIED" // <--- Added this filter
       },
       include: {
         internship: {
@@ -478,7 +474,8 @@ export const getStudentApplications = async (req, res) => {
   } catch (error) {
     console.error("Fetch applications error:", error);
     res.status(500).json({ message: "Failed to fetch applications" });
-
+  }
+}
 
 export const selectStudent = async (req, res) => {
   console.log("Inside the select student function");
@@ -530,4 +527,4 @@ export const checkIfPlaced = async (req, res) => {
     res.status(500).json({ isPlaced: false });
 
   }
-};
+}

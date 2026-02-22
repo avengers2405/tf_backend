@@ -54,9 +54,6 @@ model Invite_Magic_Token {
   target_role        String    @default("recruiter")
   created_by         User?     @relation("InviteCreatedTokens", fields: [created_by_user_id], references: [id])
   user               User      @relation("InviteRecipientTokens", fields: [user_id], references: [id], onDelete: Cascade)
-<<<<<<< HEAD
-=======
-  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }
 
 model Invite_Magic_Token {
@@ -73,7 +70,6 @@ model Invite_Magic_Token {
   target_role        String    @default("recruiter")
   created_by         User?     @relation("InviteCreatedTokens", fields: [created_by_user_id], references: [id])
   user               User      @relation("InviteRecipientTokens", fields: [user_id], references: [id], onDelete: Cascade)
->>>>>>> 628c49352f214aac16599db1885ab6f4b8cc270e
 }
 
 model Auth_Session {
@@ -86,10 +82,6 @@ model Auth_Session {
   created_at         DateTime  @default(now())
   updated_at         DateTime  @updatedAt
   user               User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
-<<<<<<< HEAD
-=======
-  user               User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
->>>>>>> 628c49352f214aac16599db1885ab6f4b8cc270e
 }
 
 model Student {
@@ -136,52 +128,6 @@ model Student {
   active_backlog_sem     String?
   passive_backlog        Int                         @default(0)
   yd                     Boolean                     @default(false)
-<<<<<<< HEAD
-=======
-  registration_number    String                      @id
-  prn_number             String?                     @unique
-  user_id                String                      @unique
-  te_roll_number         String?
-  be_roll_number         String?
-  cgpa                   Float
-  first_name             String?
-  middle_name            String?
-  last_name              String?
-  date_of_birth          DateTime                    @db.Date
-  gender                 Gender?
-  primary_email          String                      @unique
-  secondary_email        String?
-  student_email          String?
-  primary_phone          String?                     @unique
-  secondary_phone        String?
-  current_address        Json?
-  permanent_address      Json?
-  batch                  Int?
-  department             String?
-  x_class                Decimal?
-  x_class_board          String?
-  x_class_passing_year   Int?
-  x_gap_year             Int?                        @default(0)
-  x_gap_reason           String?
-  xii_class              Decimal?
-  xii_class_board        String?
-  xii_class_passing_year Int?
-  xii_gap_year           Int?                        @default(0)
-  xii_gap_reason         String?
-  diploma                Decimal?
-  diploma_university     String?
-  diploma_passing_year   Int?
-  diploma_gap_year       Int?                        @default(0)
-  diploma_gap_reason     String?
-  cet_percentile         Decimal?
-  jee_percentile         Decimal?
-  amcat_marks            Decimal?
-  amcat_details          Json?
-  active_backlog         Int                         @default(0)
-  active_backlog_sem     String?
-  passive_backlog        Int                         @default(0)
-  yd                     Boolean                     @default(false)
->>>>>>> 628c49352f214aac16599db1885ab6f4b8cc270e
   aadhar_number          String?
   pan_number             String?
   passport               String?
@@ -192,18 +138,17 @@ model Student {
   created_at             DateTime                    @default(now())
   updated_at             DateTime                    @updatedAt
   skills                 String[]
-<<<<<<< HEAD
-=======
+
+
   isPlaced               Boolean                     @default(false)
->>>>>>> 628c49352f214aac16599db1885ab6f4b8cc270e
+
   documents              Document[]
   drive_responses        Drive_Response[]
   received_invitations   Group_Invitation[]          @relation("ReceivedInvitations")
   sent_invitations       Group_Invitation[]          @relation("SentInvitations")
-<<<<<<< HEAD
-=======
+
   internshipApplications InternshipApplication[]
->>>>>>> 628c49352f214aac16599db1885ab6f4b8cc270e
+
   notifications          Notifications[]
   user                   User                        @relation(fields: [user_id], references: [id])
   student_groups         Student_Group_Association[]
@@ -472,26 +417,6 @@ model Logs {
 }
 
 model Internship {
-<<<<<<< HEAD
-  id          String    @id @default(cuid())
-  title       String
-  company     String
-  description String
-  stipend     String?
-  duration    String?
-  skills      String[]
-  tags        String[]
-  min_cgpa    Float?
-  departments String[]
-  years       Int[]
-  posted_by   String
-  posted_date DateTime  @default(now())
-  deadline    DateTime
-  applicants  Int       @default(0)
-  created_at  DateTime  @default(now())
-  updated_at  DateTime  @updatedAt
-  postedBy    Recruiter @relation(fields: [posted_by], references: [id], onDelete: Cascade)
-=======
   id           String                  @id @default(cuid())
   title        String
   company      String
@@ -511,13 +436,12 @@ model Internship {
   updated_at   DateTime                @updatedAt
   postedBy     Recruiter               @relation(fields: [posted_by], references: [id], onDelete: Cascade)
   applications InternshipApplication[]
->>>>>>> 628c49352f214aac16599db1885ab6f4b8cc270e
+
 
   @@map("Internship")
 }
 
-<<<<<<< HEAD
-=======
+
 model InternshipApplication {
   id           String     @id @default(uuid())
   studentId    String
@@ -529,7 +453,7 @@ model InternshipApplication {
   student      Student    @relation(fields: [studentId], references: [registration_number])
 }
 
->>>>>>> 628c49352f214aac16599db1885ab6f4b8cc270e
+
 enum Phase_Status {
   OPEN
   CLOSED

@@ -1,4 +1,4 @@
- import fileStorageService from "../services/fileStorageService.js";
+import fileStorageService from "../services/fileStorageService.js";
 import { spawn } from "child_process";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -27,7 +27,7 @@ function generateRandomString(length) {
  * Upload resume handler
  * Accepts a resume PDF file from form data and stores it in /resume folder
  */
-export const uploadResume = async (req, res) => {
+ export const uploadResume = async (req, res) => {
   logger.log("Endpoint has been hit: ", "/resume/upload");
   
   // Check if user is a student
@@ -45,6 +45,25 @@ export const uploadResume = async (req, res) => {
         success: false,
         message: 'No resume file provided. Please upload a file in the "resume" field.'
       });
+    }
+
+    // NEW: Safely extract and parse skills from req.body
+    let parsedSkills = [];
+    if (req.body.skills) {
+      try {
+        // Form-data might send the array as a stringified JSON like '["React", "Node"]'
+        parsedSkills = typeof req.body.skills === 'string' 
+          ? JSON.parse(req.body.skills) 
+          : req.body.skills;
+          
+        // Ensure it's strictly an array before passing to Prisma
+        if (!Array.isArray(parsedSkills)) {
+          parsedSkills = [parsedSkills.toString()]; // Fallback to a single-item array if a plain string was sent
+        }
+      } catch (e) {
+        logger.log("Warning: Could not parse skills from request body. Defaulting to empty array.");
+        parsedSkills = [];
+      }
     }
 
     // Generate random 8-character alphanumeric string for resume name
@@ -87,7 +106,8 @@ export const uploadResume = async (req, res) => {
         student_registration_number: req.student.registration_number,
         name: `${randomName}.pdf`,
         document_description: { type: "resume" },
-        document_url: fileName
+        document_url: fileName,
+        skills: parsedSkills // NEW: Insert the extracted array here
       }
     });
 
@@ -98,7 +118,8 @@ export const uploadResume = async (req, res) => {
         fileName: `${randomName}.pdf`,
         filePath: fileName,
         storedAt: filePath,
-        documentId: document.id
+        documentId: document.id,
+        skills: document.skills // Returning the skills back to confirm they saved
       }
     });
 
@@ -111,7 +132,6 @@ export const uploadResume = async (req, res) => {
     });
   }
 };
-
 /**
  * List all resumes/documents handler
  * Fetches all documents from the database for a student
@@ -278,7 +298,7 @@ export const downloadResume = async (req, res) => {
         name: true
       }
     });
-    
+    console.log("Document",document);
     // If document not found or doesn't belong to the student
     if (!document) {
       return res.status(404).json({
@@ -292,7 +312,7 @@ export const downloadResume = async (req, res) => {
     const resumePath = isAnonymized
       ? path.join(__dirname, '../../uploads/anonymized', path.basename(document.document_url))
       : path.join(__dirname, '../../uploads', document.document_url);
-    
+    console.log("Path",resumePath);
     // Check if file exists on filesystem
     try {
       await fs.access(resumePath);

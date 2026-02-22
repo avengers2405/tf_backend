@@ -14,7 +14,7 @@ const router = Router();
 router.get("/students", getAllStudents);
 router.put("/students/update-skills", updateStudentSkills);
 // this gets the skills for a specific student, using username as a parameter
-router.post('/get-skills', getStudentSkills)
+router.get('/students/get-skills', getStudentSkills);
 
 router.get("/students/me", jwtAuth, requireRole("student"), getMyStudentProfile);
 router.put("/students/me/field", jwtAuth, requireRole("student"), updateMyStudentField);

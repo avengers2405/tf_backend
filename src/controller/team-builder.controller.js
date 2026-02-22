@@ -1,6 +1,8 @@
 import { prisma } from "../db/index.js";
 import logger from "../services/logger.js";
 
+const MAX_GROUPS_PER_STUDENT = 2;
+
 // export const createTeam = async (req, res) => {
 //   try {
 //     logger.log("Entered create grp");
@@ -80,6 +82,16 @@ export const createTeam = async (req, res) => {
     }
 
     const creatorRegNo = creatorStudent.registration_number;
+
+  const existingGroupCount = await prisma.student_Group_Association.count({
+    where: { student_id: creatorRegNo }
+  });
+
+  if (existingGroupCount >= MAX_GROUPS_PER_STUDENT) {
+    return res.status(400).json({
+      error: `You can be part of at most ${MAX_GROUPS_PER_STUDENT} groups.`
+    });
+  }
 
     // 2. Run Transaction using Prisma's auto-incrementing ID
     logger.log("Starting transaction");

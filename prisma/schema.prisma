@@ -56,22 +56,6 @@ model Invite_Magic_Token {
   user               User      @relation("InviteRecipientTokens", fields: [user_id], references: [id], onDelete: Cascade)
 }
 
-// model Invite_Magic_Token {
-//   id                 String    @id @default(cuid())
-//   user_id            String
-//   recipient_email    String
-//   created_by_user_id String?
-//   custom_message     String?
-//   token_hash         String    @unique
-//   jti                String    @unique
-//   expires_at         DateTime
-//   used_at            DateTime?
-//   created_at         DateTime  @default(now())
-//   target_role        String    @default("recruiter")
-//   created_by         User?     @relation("InviteCreatedTokens", fields: [created_by_user_id], references: [id])
-//   user               User      @relation("InviteRecipientTokens", fields: [user_id], references: [id], onDelete: Cascade)
-// }
-
 model Auth_Session {
   id                 String    @id @default(cuid())
   user_id            String

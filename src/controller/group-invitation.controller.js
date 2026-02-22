@@ -1,5 +1,7 @@
 import { prisma } from "../db/index.js";
 
+const MAX_GROUPS_PER_STUDENT = 2;
+
 export const getPendingInvitations = async (req, res) => {
     try {
         const { userId } = req.params;
@@ -54,8 +56,8 @@ export const getPendingInvitations = async (req, res) => {
 // 2. Send an Invitation
 export const sendGroupInvitation = async (req, res) => {
     try {
-        const { group_id, receiver_registration_number, sender_user_id } = req.body;
-        console.log("Received invitation request:", { group_id, receiver_registration_number, sender_user_id });
+        const { group_id, receiver_registration_number, sender_user_id, description } = req.body;
+        console.log("Received invitation request:", { group_id, receiver_registration_number, sender_user_id, description });
         // 1. Validate incoming data
         if (!group_id || !receiver_registration_number || !sender_user_id) {
             return res.status(400).json({ error: "Missing required fields for invitation." });
@@ -92,7 +94,8 @@ export const sendGroupInvitation = async (req, res) => {
                 group_id: parseInt(group_id),
                 sender_id: senderRegId,
                 receiver_id: receiver_registration_number,
-                status: "PENDING"
+                status: "PENDING",
+                description: description || null,
             }
         });
 
@@ -130,20 +133,31 @@ export const acceptGroupInvitation = async (req, res) => {
             return res.status(400).json({ error: "Invitation has already been processed." });
         }
 
-        // 2. Perform a transaction: Update invite status AND add student to group
-        console.log("Updating invitation status and adding student to group in a transaction");
-        await prisma.$transaction([
-            prisma.group_Invitation.update({
+        // 2. Perform a transaction: enforce max memberships, then accept invite and add student to group
+        console.log("Validating group membership limit and accepting invitation in a transaction");
+        await prisma.$transaction(async (tx) => {
+            const currentGroupCount = await tx.student_Group_Association.count({
+                where: { student_id: invitation.receiver_id }
+            });
+
+            if (currentGroupCount >= MAX_GROUPS_PER_STUDENT) {
+                const membershipLimitError = new Error(`A student can only be part of ${MAX_GROUPS_PER_STUDENT} groups.`);
+                membershipLimitError.code = "GROUP_MEMBERSHIP_LIMIT_REACHED";
+                throw membershipLimitError;
+            }
+
+            await tx.group_Invitation.update({
                 where: { id: parseInt(invitation_id) },
                 data: { status: "ACCEPTED" }
-            }),
-            prisma.student_Group_Association.create({
+            });
+
+            await tx.student_Group_Association.create({
                 data: {
                     student_id: invitation.receiver_id,
                     group_id: invitation.group_id
                 }
-            })
-        ]);
+            });
+        });
 
         // 3. Fetch the updated list of accepted team members to send back to the UI
         const groupMemberships = await prisma.student_Group_Association.findMany({
@@ -174,6 +188,10 @@ export const acceptGroupInvitation = async (req, res) => {
         // Handle Prisma unique constraint violation (if they are somehow already in the group)
         if (error.code === 'P2002') {
             return res.status(400).json({ error: "You are already a member of this team." });
+        }
+
+        if (error.code === 'GROUP_MEMBERSHIP_LIMIT_REACHED') {
+            return res.status(400).json({ error: `You can be part of at most ${MAX_GROUPS_PER_STUDENT} groups.` });
         }
         
         res.status(500).json({ error: "Internal server error." });

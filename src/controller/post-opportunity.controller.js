@@ -126,3 +126,38 @@ export const getProjectOpportunitiesById = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+export const getAllOpportunities = async (req, res) => {
+  try {
+    // Get all project opportunities for students to view
+    const opportunities = await prisma.project.findMany({
+      include: {
+        supervisor: {
+          select: {
+            first_name: true,
+            last_name: true,
+            department: true
+          }
+        },
+        _count: {
+          select: {
+            groups: true // Count of groups working on this project
+          }
+        }
+      },
+      orderBy: {
+        project_id: 'desc' // Newest projects first
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      count: opportunities.length,
+      data: opportunities
+    });
+
+  } catch (error) {
+    console.error("Error fetching all opportunities:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};

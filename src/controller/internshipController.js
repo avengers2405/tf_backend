@@ -478,7 +478,8 @@ export const getStudentApplications = async (req, res) => {
   } catch (error) {
     console.error("Fetch applications error:", error);
     res.status(500).json({ message: "Failed to fetch applications" });
-
+  }
+};
 
 export const selectStudent = async (req, res) => {
   console.log("Inside the select student function");
@@ -530,4 +531,4 @@ export const checkIfPlaced = async (req, res) => {
     res.status(500).json({ isPlaced: false });
 
   }
-};
+}

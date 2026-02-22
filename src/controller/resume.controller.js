@@ -249,22 +249,24 @@ export const listResume = async (req, res) => {
 export const downloadResume = async (req, res) => {
   logger.log("Endpoint has been hit: ", "/resume/download/:id");
   
-  // Check if user is a student or teacher
+  // Check if user is a student, teacher, or recruiter
   if (
-    (req.cookies.user_role !== 'student' && req.cookies.user_role !== 'teacher') ||
+    (req.cookies.user_role !== 'student' && req.cookies.user_role !== 'teacher' && req.cookies.user_role !== 'recruiter') ||
     (req.cookies.user_role === 'student' && !req.student?.registration_number) ||
     (req.cookies.user_role === 'teacher' && !req.teacher?.id)
   ) {
     return res.status(403).json({
       success: false,
-      message: 'Forbidden: Only students and teachers are allowed to access this endpoint'
+      message: 'Forbidden: Only students, teachers, and recruiters are allowed to access this endpoint'
     });
   }
   
   let registration_number;
   
-  // Determine the registration number based on user role
-  if (req.cookies.user_role === 'teacher') {
+  // Recruiters can access any resume without student_id
+  if (req.cookies.user_role === 'recruiter') {
+    registration_number = null; // Recruiters don't need to verify student ownership
+  } else if (req.cookies.user_role === 'teacher') {
     // Teachers must provide student_id in query parameters
     const student_id = req.query.student_id;
     if (!student_id) {
@@ -279,7 +281,7 @@ export const downloadResume = async (req, res) => {
     registration_number = req.student.registration_number;
   }
 
-  logger.info("Resume demanded for: ", registration_number);
+  logger.info("Resume demanded for: ", registration_number || "Recruiter access");
   
   try {
     const { id } = req.params;
@@ -287,12 +289,14 @@ export const downloadResume = async (req, res) => {
     // Check if anonymized parameter is true
     const isAnonymized = req.query.anonymized === 'true';
     
-    // Fetch document from database and verify it belongs to the student
+    // Fetch document from database
+    // For recruiters, skip the student verification; for others, verify ownership
+    const whereClause = registration_number 
+      ? { id: id, student_registration_number: registration_number }
+      : { id: id };
+    
     const document = await prisma.document.findFirst({
-      where: {
-        id: id,
-        student_registration_number: registration_number
-      },
+      where: whereClause,
       select: {
         document_url: true,
         name: true

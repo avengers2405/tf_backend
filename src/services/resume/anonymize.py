@@ -3,6 +3,10 @@ import sys
 import json
 import os
 
+# Set UTF-8 encoding for stdout to handle Unicode characters on Windows
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
+
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Parse command line arguments

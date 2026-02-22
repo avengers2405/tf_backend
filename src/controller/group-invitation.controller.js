@@ -56,8 +56,8 @@ export const getPendingInvitations = async (req, res) => {
 // 2. Send an Invitation
 export const sendGroupInvitation = async (req, res) => {
     try {
-        const { group_id, receiver_registration_number, sender_user_id } = req.body;
-        console.log("Received invitation request:", { group_id, receiver_registration_number, sender_user_id });
+        const { group_id, receiver_registration_number, sender_user_id, description } = req.body;
+        console.log("Received invitation request:", { group_id, receiver_registration_number, sender_user_id, description });
         // 1. Validate incoming data
         if (!group_id || !receiver_registration_number || !sender_user_id) {
             return res.status(400).json({ error: "Missing required fields for invitation." });
@@ -94,7 +94,8 @@ export const sendGroupInvitation = async (req, res) => {
                 group_id: parseInt(group_id),
                 sender_id: senderRegId,
                 receiver_id: receiver_registration_number,
-                status: "PENDING"
+                status: "PENDING",
+                description: description || null,
             }
         });
 

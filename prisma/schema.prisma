@@ -122,17 +122,12 @@ model Student {
   created_at             DateTime                    @default(now())
   updated_at             DateTime                    @updatedAt
   skills                 String[]
-
-
   isPlaced               Boolean                     @default(false)
-
   documents              Document[]
   drive_responses        Drive_Response[]
   received_invitations   Group_Invitation[]          @relation("ReceivedInvitations")
   sent_invitations       Group_Invitation[]          @relation("SentInvitations")
-
   internshipApplications InternshipApplication[]
-
   notifications          Notifications[]
   user                   User                        @relation(fields: [user_id], references: [id])
   student_groups         Student_Group_Association[]
@@ -421,10 +416,8 @@ model Internship {
   postedBy     Recruiter               @relation(fields: [posted_by], references: [id], onDelete: Cascade)
   applications InternshipApplication[]
 
-
   @@map("Internship")
 }
-
 
 model InternshipApplication {
   id           String     @id @default(uuid())
@@ -436,7 +429,6 @@ model InternshipApplication {
   internship   Internship @relation(fields: [internshipId], references: [id])
   student      Student    @relation(fields: [studentId], references: [registration_number])
 }
-
 
 enum Phase_Status {
   OPEN

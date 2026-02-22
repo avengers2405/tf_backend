@@ -477,6 +477,7 @@ export const getStudentApplications = async (req, res) => {
   }
 }
 
+
 export const selectStudent = async (req, res) => {
   console.log("Inside the select student function");
   try {

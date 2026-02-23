@@ -282,9 +282,13 @@ export const getAllInternships = async (req, res) => {
 export const getInternshipById = async (req, res) => {
   const { id } = req.params
 
+  if (!id) {
+    return res.status(400).json({ message: "Internship id is required" })
+  }
+
   try {
     const internship = await prisma.internship.findUnique({
-      where: { id },
+      where: { id: String(id) },
       include: {
         postedBy: {
           select: {
@@ -321,8 +325,8 @@ export const getInternshipById = async (req, res) => {
 
     res.status(200).json(internship)
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ message: "Failed to fetch internship" })
+    console.error("getInternshipById error", { id, error: error.message })
+    res.status(500).json({ message: "Failed to fetch internship", error: error.message })
   }
 }
 
@@ -512,6 +516,11 @@ export const selectStudent = async (req, res) => {
 export const checkIfPlaced = async (req, res) => {
   try {
     const { userId } = req.params;
+
+    if (!userId) {
+      console.warn("checkIfPlaced called without userId param");
+      return res.status(400).json({ isPlaced: false, message: "userId is required" });
+    }
 
     const student = await prisma.student.findUnique({
       where: { user_id: userId },

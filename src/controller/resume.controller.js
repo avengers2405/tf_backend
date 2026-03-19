@@ -1,4 +1,5 @@
 import fileStorageService from "../services/fileStorageService.js";
+import s3FileStorageService from "../services/s3FileStorageService.js";
 import { spawn } from "child_process";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -72,6 +73,8 @@ function generateRandomString(length) {
 
     // Store the file using fileStorageService
     const filePath = await fileStorageService.storeFile(fileName, req.file.buffer);
+    // Store file ito S3
+    await s3FileStorageService.uploadDocumentFromBuffer(req.file.buffer, "uploaded-documents-katana", fileName);
 
     // Run the analyze.js script with fileName as argument
     const scriptPath = path.join(__dirname, '../services/resume/analyze.js');
@@ -87,10 +90,11 @@ function generateRandomString(length) {
         console.error(`analyze.js error: ${data}`);
       });
       
-      nodeProcess.on('close', (code) => {
+      nodeProcess.on('close', async (code) => {
         if (code !== 0) {
           reject(new Error(`analyze.js exited with code ${code}`));
         } else {
+          await s3FileStorageService.uploadDocumentFromDisk(fileName.replace('/resume/', '/anonymized/'), "anonymized-documents-katana")
           resolve();
         }
       });
@@ -307,24 +311,35 @@ export const downloadResume = async (req, res) => {
       });
     }
     
+    // replacing this searching and reading from ephermary backend fs to s3
+
+    // ------------ fs code -------------
     // Construct the file path based on anonymized parameter
     // Use the document_url from DB but adjust the folder based on isAnonymized
-    const resumePath = isAnonymized
-      ? path.join(__dirname, '../../uploads/anonymized', path.basename(document.document_url))
-      : path.join(__dirname, '../../uploads', document.document_url);
-    console.log("Path",resumePath);
-    // Check if file exists on filesystem
-    try {
-      await fs.access(resumePath);
-    } catch {
-      return res.status(404).json({
-        success: false,
-        message: 'Document file not found on server'
-      });
-    }
+    // const resumePath = isAnonymized
+    //   ? path.join(__dirname, '../../uploads/anonymized', path.basename(document.document_url))
+    //   : path.join(__dirname, '../../uploads', document.document_url);
+    // console.log("Path",resumePath);
+    // // Check if file exists on filesystem
+    // try {
+    //   await fs.access(resumePath);
+    // } catch {
+    //   return res.status(404).json({
+    //     success: false,
+    //     message: 'Document file not found on server'
+    //   });
+    // }
     
     // Read the PDF file
-    const pdfBuffer = await fs.readFile(resumePath);
+    // const pdfBuffer = await fs.readFile(resumePath);
+    // ------------ fs code -------------
+
+    // ------------ s3 code -------------
+    var retrievalBucket = "uploaded-documents-katana";
+    if (isAnonymized) {
+      retrievalBucket = "anonymized-documents-katana";
+    }
+    const pdfBuffer = await fileStorageService.getFile(document.document_url, retrievalBucket);
     
     // Set appropriate headers for PDF
     res.setHeader('Content-Type', 'application/pdf');

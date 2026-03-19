@@ -94,7 +94,7 @@ function generateRandomString(length) {
         if (code !== 0) {
           reject(new Error(`analyze.js exited with code ${code}`));
         } else {
-          await s3FileStorageService.uploadDocumentFromDisk(fileName.replace('/resume/', '/anonymized/'), "anonymized-documents-katana")
+          await s3FileStorageService.uploadDocumentFromDisk(fileName, "anonymized-documents-katana")
           resolve();
         }
       });
@@ -310,36 +310,12 @@ export const downloadResume = async (req, res) => {
         message: 'Document not found or not associated with the specified student'
       });
     }
-    
-    // replacing this searching and reading from ephermary backend fs to s3
 
-    // ------------ fs code -------------
-    // Construct the file path based on anonymized parameter
-    // Use the document_url from DB but adjust the folder based on isAnonymized
-    // const resumePath = isAnonymized
-    //   ? path.join(__dirname, '../../uploads/anonymized', path.basename(document.document_url))
-    //   : path.join(__dirname, '../../uploads', document.document_url);
-    // console.log("Path",resumePath);
-    // // Check if file exists on filesystem
-    // try {
-    //   await fs.access(resumePath);
-    // } catch {
-    //   return res.status(404).json({
-    //     success: false,
-    //     message: 'Document file not found on server'
-    //   });
-    // }
-    
-    // Read the PDF file
-    // const pdfBuffer = await fs.readFile(resumePath);
-    // ------------ fs code -------------
-
-    // ------------ s3 code -------------
     var retrievalBucket = "uploaded-documents-katana";
     if (isAnonymized) {
       retrievalBucket = "anonymized-documents-katana";
     }
-    const pdfBuffer = await fileStorageService.getFile(document.document_url, retrievalBucket);
+    const pdfBuffer = await s3FileStorageService.retrieveDocumentToFileBuffer(retrievalBucket, document.document_url);
     
     // Set appropriate headers for PDF
     res.setHeader('Content-Type', 'application/pdf');

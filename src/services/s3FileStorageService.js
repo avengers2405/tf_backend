@@ -4,7 +4,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from 'url';
 import logger from "./logger.js";
-import { pipeline } from "stream/promises";
+import fileStorageService from "./fileStorageService.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -110,7 +110,7 @@ class S3FileStorageService {
    * 
    * @async
    * @param {string} bucketName - The name of the S3 bucket containing the file
-   * @param {string} targetFileName - The key/name of the file in the S3 bucket
+   * @param {string} targetFilePath - The key/path of the file in the S3 bucket
    * @returns {Promise<Stream>} A readable stream of the file contents from S3
    * @throws {Error} Throws an error if the file retrieval fails
    * 
@@ -118,14 +118,43 @@ class S3FileStorageService {
    * const fileStream = await retrieveDocumentToFileStream('my-bucket', 'resumes/john-resume.pdf');
    * fileStream.pipe(responseStream);
    */
-  async retrieveDocumentToFileStream(bucketName, targetFileName) {
+  async retrieveDocumentToFileStream(bucketName, targetFilePath) {
+    // normalize
+    targetFilePath = targetFilePath.startsWith('/')
+      ? targetFilePath.substring(1)
+      : targetFilePath;
+    
     const command = new GetObjectCommand({
       Bucket: bucketName,
-      Key: targetFileName
+      Key: targetFilePath
     })
 
     const response = await s3Client.send(command);
     return response.Body;
+  }
+
+  /**
+   * Retrieves a document from an AWS S3 bucket as a Buffer (in-memory data).
+   * 
+   * This function downloads the file from S3 and converts it to a Buffer, allowing
+   * the file contents to be processed in memory without saving to disk first.
+   * Useful for processing files directly in your application logic.
+   * 
+   * @async
+   * @param {string} bucketName - The name of the S3 bucket containing the file
+   * @param {string} targetFilePath - The key/path of the file in the S3 bucket
+   * @returns {Promise<Buffer>} A Buffer containing the complete file contents from S3
+   * @throws {Error} Throws an error if the file retrieval fails
+   * 
+   * @example
+   * const fileBuffer = await retrieveDocumentToFileBuffer('my-bucket', 'resumes/john-resume.pdf');
+   * const content = fileBuffer.toString('utf-8'); // Convert to string if needed
+   */
+  async retrieveDocumentToFileBuffer(bucketName, targetFilePath) {
+    const fileStream = await this.retrieveDocumentToFileStream(bucketName, targetFilePath);
+    const byteArray = await fileStream.transformToByteArray();
+    const buffer = Buffer.from(byteArray);
+    return buffer;
   }
 
   /**
@@ -136,7 +165,7 @@ class S3FileStorageService {
    * 
    * @async
    * @param {string} bucketName - The name of the S3 bucket containing the file
-   * @param {string} targetFileName - The key/name of the file in the S3 bucket
+   * @param {string} targetFilePath - The key/path of the file in the S3 bucket
    * @param {string} downloadPath - The local file path where the downloaded file will be saved
    * @returns {Promise<void>} Completes when the file has been successfully downloaded and written
    * @throws {Error} Throws an error if the file retrieval or writing to disk fails
@@ -144,11 +173,17 @@ class S3FileStorageService {
    * @example
    * await retrieveDocumentToFilePath('my-bucket', 'resumes/john-resume.pdf', './downloaded-resume.pdf');
    */
-  async retrieveDocumentToFilePath(bucketName, targetFileName, downloadPath) {
+  async retrieveDocumentToFilePath(bucketName, targetFilePath, downloadPath) {
+    // normalize
+    targetFilePath = targetFilePath.startsWith('/')
+      ? targetFilePath.substring(1)
+      : targetFilePath;
+    
     try {
-      const fileStream = await this.retrieveDocumentToFileStream(bucketName, targetFileName);
-      const writeStream = fs.createWriteStream(downloadPath);
-      await pipeline(fileStream, writeStream);
+      const fileStream = await this.retrieveDocumentToFileStream(bucketName, targetFilePath);
+      // const writeStream = fs.createWriteStream(downloadPath);
+      // await pipeline(fileStream, writeStream);
+      await fileStorageService.storeFile(downloadPath, fileStream);
       logger.info(`File downloaded successfully to ${downloadPath}`);
     } catch (err) {
       logger.error(`Error downloading file from S3: ${err}`);

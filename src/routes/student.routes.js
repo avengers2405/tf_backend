@@ -11,7 +11,7 @@ import jwtAuth from "../middleware/jwtAuth.js";
 import requireRole from "../middleware/requireRole.js";
 const router = Router();
 
-router.get("/students", getAllStudents);
+router.get("/students/:userId", getAllStudents);
 router.put("/students/update-skills", updateStudentSkills);
 // this gets the skills for a specific student, using username as a parameter
 router.get('/students/get-skills', getStudentSkills);

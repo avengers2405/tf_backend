@@ -10,20 +10,24 @@ export const getAllInternships = async (req, res) => {
     const filterCondition = user_id ? { postedBy: { user_id: user_id } } : {};
     console.log("Filer Condition",filterCondition);
     const internships = await prisma.internship.findMany({
-      where: filterCondition,
-      orderBy: { posted_date: "desc" },
-      include: {
-        postedBy: {
+  where: filterCondition,
+  orderBy: { posted_date: "desc" },
+  include: {
+    postedBy: {
+      select: {
+        id: true,
+        recruiter: {          // nested relation User → Recruiter
           select: {
-            id: true,             // This is the Recruiter table ID
-            user_id: true,        // <--- ADD THIS! This is the global User ID
+            user_id: true,
             first_name: true,
             last_name: true,
             company_name: true,
-          },
-        },
+          }
+        }
       },
-    });
+    },
+  },
+});
     
     res.status(200).json(internships);
   } catch (error) {
@@ -44,15 +48,19 @@ export const getInternshipById = async (req, res) => {
     const internship = await prisma.internship.findUnique({
       where: { id: String(id) },
       include: {
-        postedBy: {
-          select: {
-            id: true,
-            first_name: true,
-            last_name: true,
-            company_name: true,
-            email: true,
-          },
-        },
+       postedBy: {
+  select: {
+    id: true,
+    email: true,        // ✅ email IS on User
+    recruiter: {
+      select: {
+        first_name: true,
+        last_name: true,
+        company_name: true,
+      }
+    }
+  },
+},
         // REMOVED the status: "APPLIED" filter here
         applications: {
           include: {

@@ -15,9 +15,9 @@ import { validateAuthConfig } from './config/authConfig.js';
 import studentRoutes from "./routes/student.routes.js";
 import teamBuilderRoutes from "./routes/team-builder.routes.js";
 import logger from "./services/logger.js";
-import postOpportunity from "./routes/post-opportunity.routes.js";
+import AcademicProjectRoutes from "./routes/Opportunities/academicProjectRoutes.js";
+import internshipRoutes from "./routes/Opportunities/internshipRoutes.js";
 import inviteRoutes from "./routes/invite.routes.js";
-import internshipRoutes from "./routes/internshipRotues.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -90,10 +90,9 @@ app.use("/api/team-builder", teamBuilderRoutes);
 
 app.use("/api", studentRoutes);
 
-app.use("/post-opportunity", postOpportunity);
+app.use("/api/academic-project", AcademicProjectRoutes);
 
-app.use("/post-opportunity", postOpportunity);
-
+ 
 app.get('/email-action', (req, res) =>
   emailActionController.handleEmailConfirmation(req, res)
 );

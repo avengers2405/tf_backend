@@ -1,7 +1,8 @@
+//this is basically for the academic project 
 // controllers/opportunityController.js
-import { prisma } from "../db/index.js";
+import { prisma } from "../../db/index.js";
 
-export const postOpportunity = async (req, res) => {
+export const createAcademicProject = async (req, res) => {
   const { 
     title, 
     company, 
@@ -87,7 +88,7 @@ export const postOpportunity = async (req, res) => {
   }
 };
 
-export const getProjectOpportunitiesById = async (req, res) => {
+export const getAcademicProjectById = async (req, res) => {
   const { userid } = req.params; // or req.query depending on your route
 
   if (!userid) {
@@ -127,7 +128,7 @@ export const getProjectOpportunitiesById = async (req, res) => {
   }
 };
 
-export const getAllOpportunities = async (req, res) => {
+export const getAllAcademicProjects = async (req, res) => {
   try {
     // Get all project opportunities for students to view
     const opportunities = await prisma.project.findMany({

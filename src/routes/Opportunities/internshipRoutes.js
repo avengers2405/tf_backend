@@ -10,7 +10,7 @@ import {
   selectStudent,
   checkIfPlaced
 
-} from "../controller/internshipController.js";
+} from "../../controller/Opportunities/internshipController.js";
 
 const router = express.Router();
 

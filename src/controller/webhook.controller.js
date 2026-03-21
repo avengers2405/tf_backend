@@ -66,7 +66,7 @@ export const handleGitHubWebhook = async (req, res) => {
     //history is a dyna,ic array
     const history = await prisma_.git_logbook_entries.findMany({
       where: {
-        project_id: project_id,
+        project_id: Number(project_id),
       },
       orderBy: {
         commit_timestamp: 'desc',
@@ -97,7 +97,7 @@ export const handleGitHubWebhook = async (req, res) => {
         where: { commit_id: commit.id },
         update: {},
         create: {
-          project_id: project_id,
+          project_id: Number(project_id),
           commit_id: commit.id,
           commit_message: commit.message,
           pusher_name: payload.pusher.name,

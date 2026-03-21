@@ -204,20 +204,27 @@ const getUserIdFromRequest = (req) => req.user?.sub;
 
 export const getAllStudents = async (req, res) => {
   try {
-    const students = await prisma.student.findMany();
-    console.log("Students", students);
+    const { userId } = req.params;
+    console.log("Get all students requested by user:", userId);
+    const students = await prisma.student.findMany({
+      where: {
+        user_id: {
+          not: userId,
+        },
+      },
+    });
+
     const formattedStudents = students.map(s => ({
-      id: s.registration_number,
+      id: s.user_id,
       registration_number: s.registration_number,
       name: `${s.first_name || ""} ${s.last_name || ""}`.trim(),
       department: s.department,
       year: s.be_roll_number ? "4" : "3",
       cgpa: s.cgpa,
 
-      // ✅ Directly from Student model
       skills: s.skills || [],
 
-      // UI placeholder (safe to keep)
+
       domains: [
         { name: "Web Development", value: 70 },
         { name: "AI / Machine Learning", value: 30 },

@@ -435,6 +435,7 @@ enum Phase_Status {
   OPEN
   CLOSED
   LOCKED
+  SUBMITTED
 }
 
 enum Gender {

@@ -18,6 +18,7 @@ import logger from "./services/logger.js";
 import AcademicProjectRoutes from "./routes/Opportunities/academicProjectRoutes.js";
 import internshipRoutes from "./routes/Opportunities/internshipRoutes.js";
 import inviteRoutes from "./routes/invite.routes.js";
+import groupProjectRoutes from "./routes/groupProject.routes.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -85,6 +86,8 @@ app.use("/project-progress", projectRoutes);
 app.use('/auth', authRoutes);
 
 app.use("/api/projects", projectRoutes);
+
+app.use("/api/project-group",groupProjectRoutes);
 
 app.use("/api/team-builder", teamBuilderRoutes);
 

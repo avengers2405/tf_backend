@@ -1,7 +1,7 @@
 generator client {
   provider      = "prisma-client-js"
-  url           = env("DATABASE_URL")
   binaryTargets = ["native", "windows"]
+  url           = env("DATABASE_URL")
 }
 
 datasource db {
@@ -18,13 +18,13 @@ model User {
   email                       String               @unique
   auth_magic_tokens           Auth_Magic_Token[]
   auth_sessions               Auth_Session[]
+  internships                 Internship[]
   invite_magic_tokens_created Invite_Magic_Token[] @relation("InviteCreatedTokens")
   invite_magic_tokens         Invite_Magic_Token[] @relation("InviteRecipientTokens")
   recruiter                   Recruiter?
   student                     Student?
   teacher                     Teacher?
   tnp                         Tnp?
-  internships                 Internship[]
 }
 
 model Temp {
@@ -127,6 +127,7 @@ model Student {
   isPlaced               Boolean                     @default(false)
   documents              Document[]
   drive_responses        Drive_Response[]
+  Group                  Group[]
   received_invitations   Group_Invitation[]          @relation("ReceivedInvitations")
   sent_invitations       Group_Invitation[]          @relation("SentInvitations")
   internshipApplications InternshipApplication[]
@@ -253,6 +254,7 @@ model Project {
   project_id            Int                         @id @default(autoincrement())
   min_cgpa              Float?
   registration_deadline DateTime?
+  deadline              DateTime                    @default(now())
   supervisor            Teacher?                    @relation(fields: [supervisor_id], references: [id])
   groups                Project_Group_Association[]
   phases                Project_Phase[]
@@ -267,11 +269,11 @@ model ProjectEmbedding {
   project_id Int
   chunk_type String
   chunk_id   String
-  content    String
+  content    String 
+  embedding  Unsupported("vector(384)")?
   metadata   Json?
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
-
   project    Project  @relation(fields: [project_id], references: [project_id])
 
   @@unique([project_id, chunk_id])
@@ -293,6 +295,8 @@ model TeacherRole {
 model Group {
   group_name  String?
   group_id    Int                         @id @default(autoincrement())
+  leader_id   String?
+  Student     Student?                    @relation(fields: [leader_id], references: [registration_number])
   invitations Group_Invitation[]
   teachers    Group_Teacher_Association[]
   projects    Project_Group_Association[]

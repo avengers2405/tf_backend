@@ -14,6 +14,7 @@ export const createAcademicProject = async (req, res) => {
     userid // Coming from the frontend payload
   } = req.body;
 
+  console.log("backend recieved  : ",req.body);
   // --- 1. Strict Validation ---
   if (!title || !type || !description || !userid) {
     return res.status(400).json({ error: "Missing required fields: title, type, description, or userid." });

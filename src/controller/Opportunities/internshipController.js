@@ -7,7 +7,7 @@ export const getAllInternships = async (req, res) => {
   console.log("User ID",user_id);
 
   try {
-    const filterCondition = user_id ? { postedBy: { user_id: user_id } } : {};
+  const filterCondition = user_id ? { posted_by: user_id } : {};
     console.log("Filer Condition",filterCondition);
     const internships = await prisma.internship.findMany({
   where: filterCondition,
@@ -91,6 +91,50 @@ export const getInternshipById = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch internship", error: error.message })
   }
 }
+
+//Get internship buy recruiter id 
+export const getInternshipsByRecruiter = async (req, res) => {
+  const { userId } = req.params; // This is User.id (cuid)
+
+  if (!userId) {
+    return res.status(400).json({ message: "userId is required" });
+  }
+
+  try {
+    const internships = await prisma.internship.findMany({
+      where: {
+        posted_by: userId  // ✅ Direct FK match — no nested relation needed
+      },
+      orderBy: { posted_date: "desc" },
+      include: {
+        postedBy: {
+          select: {
+            id: true,
+            recruiter: {
+              select: {
+                first_name: true,
+                last_name: true,
+                company_name: true,
+              }
+            }
+          }
+        },
+        applications: {
+          select: {
+            id: true,
+            status: true,
+            createdAt: true,
+          }
+        }
+      }
+    });
+
+    res.status(200).json(internships);
+  } catch (error) {
+    console.error("getInternshipsByRecruiter error:", error);
+    res.status(500).json({ message: "Failed to fetch recruiter internships" });
+  }
+};
 
 // Post internship
 export const createInternship = async (req, res) => {

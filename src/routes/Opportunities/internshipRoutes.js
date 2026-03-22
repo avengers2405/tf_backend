@@ -4,7 +4,7 @@ import {
   getInternshipById,
   createInternship,
   applyForInternship,
-
+  getInternshipsByRecruiter,
   getStudentApplications,
 
   selectStudent,
@@ -19,6 +19,9 @@ router.get("/", getAllInternships)
 
 // Get internship by ID
 router.get("/:id", getInternshipById)
+
+//get internship by recruiter ID
+router.get("/:userId", getInternshipsByRecruiter)
 
 // Post internship
 router.post("/", createInternship)

@@ -61,68 +61,126 @@ const MAX_GROUPS_PER_STUDENT = 2;
 // };
 
 export const createTeam = async (req, res) => {
-  try {
-    logger.log("Entered create grp");
-    // You no longer need student_ids here for the association
-    const { group_name, creator_user_id } = req.body;
+  try {
+    logger.log("Entered create grp");
+    const { group_name, creator_user_id } = req.body;
 
-    if (!group_name || !creator_user_id) {
-      return res.status(400).json({ error: "Missing required fields." });
-    }
+    if (!group_name || !creator_user_id) {
+      return res.status(400).json({ error: "Missing required fields." });
+    }
 
-    // 1. Fetch the registration_number for the creator
-    logger.log("Fetching creator student reg");
-    const creatorStudent = await prisma.student.findUnique({
-      where: { user_id: creator_user_id },
-      select: { registration_number: true }
-    });
-
-    if (!creatorStudent) {
-      return res.status(404).json({ error: "Student profile not found." });
-    }
-
-    const creatorRegNo = creatorStudent.registration_number;
-
-  const existingGroupCount = await prisma.student_Group_Association.count({
-    where: { student_id: creatorRegNo }
-  });
-
-  if (existingGroupCount >= MAX_GROUPS_PER_STUDENT) {
-    return res.status(400).json({
-      error: `You can be part of at most ${MAX_GROUPS_PER_STUDENT} groups.`
+    const creatorStudent = await prisma.student.findUnique({
+      where: { user_id: creator_user_id },
+      select: { registration_number: true }
     });
-  }
 
-    // 2. Run Transaction using Prisma's auto-incrementing ID
-    logger.log("Starting transaction");
-    const newGroup = await prisma.$transaction(async (tx) => {
-      // Create the group
-      const group = await tx.group.create({
-        data: { group_name },
-      });
+    if (!creatorStudent) {
+      return res.status(404).json({ error: "Student profile not found." });
+    }
 
-      // 3. Create association ONLY for the creator
-      logger.log("Running association for creator only");
-      await tx.student_Group_Association.create({
-        data: {
+    const creatorRegNo = creatorStudent.registration_number;
+
+    const existingGroupCount = await prisma.student_Group_Association.count({
+      where: { student_id: creatorRegNo }
+    });
+
+    if (existingGroupCount >= MAX_GROUPS_PER_STUDENT) {
+      return res.status(400).json({
+        error: `You can be part of at most ${MAX_GROUPS_PER_STUDENT} groups.`
+      });
+    }
+
+    const newGroup = await prisma.$transaction(async (tx) => {
+      const group = await tx.group.create({
+        data: {
+          group_name,
+          leader_id: creatorRegNo, // store the leader
+        },
+      });
+
+      await tx.student_Group_Association.create({
+        data: {
           student_id: creatorRegNo,
           group_id: group.group_id,
         },
-      });
+      });
 
-      return group;
-    });
+      return group;
+    });
 
-    // 4. Return the response
-    res.status(201).json({
-      group_id: newGroup.group_id,
-      group_name: newGroup.group_name
-    });
+    res.status(201).json({
+      group_id: newGroup.group_id,
+      group_name: newGroup.group_name,
+      leader_id: newGroup.leader_id,
+    });
 
-  } catch (error) {
-    console.error("Team Creation Error:", error);
-    res.status(500).json({ error: "Internal Server Error", details: error.message });
-  }
+  } catch (error) {
+    console.error("Team Creation Error:", error);
+    res.status(500).json({ error: "Internal Server Error", details: error.message });
+  }
+};
+
+//get all the teams of a student as a leader
+export const getTeamsByLeaderId = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({ error: "User ID is missing from the request URL." });
+    }
+
+    // Resolve user_id -> registration_number
+    const studentProfile = await prisma.student.findUnique({
+      where: { user_id: userId },
+      select: { registration_number: true }
+    });
+
+    if (!studentProfile) {
+      return res.status(404).json({ error: "Student profile not found." });
+    }
+
+    const groups = await prisma.group.findMany({
+      where: {
+        leader_id: studentProfile.registration_number
+      },
+      include: {
+        students: {
+          include: {
+            student: {
+              select: {
+                registration_number: true,
+                first_name: true,
+                last_name: true,
+                user_id: true,
+                department: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    const formattedTeams = groups.map(g => ({
+      id: g.group_id,
+      name: g.group_name || `Unnamed Team ${g.group_id}`,
+      leader_id: g.leader_id,
+      members: g.students.map(assoc => ({
+        id: assoc.student.user_id,
+        registration_number: assoc.student.registration_number,
+        name: `${assoc.student.first_name || ''} ${assoc.student.last_name || ''}`.trim() || "Unknown Student",
+        department: assoc.student.department
+      }))
+    }));
+
+    return res.status(200).json({
+      count: formattedTeams.length,
+      teams: formattedTeams
+    });
+
+  } catch (error) {
+    console.error("Error fetching teams by leader:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
 };
 
 // export const getMyTeams = async (req, res) => {
@@ -240,13 +298,13 @@ export const getMyTeams = async (req, res) => {
        * Note: If a group was created but no invites sent yet, you might need a 
        * 'creator_id' field on the Group model itself for 100% reliability.
        */
-      const creatorIdFromInvites = g.invitations[0]?.sender_id;
+      // const creatorIdFromInvites = g.invitations[0]?.sender_id;
       
       return {
         id: g.group_id,
         name: g.group_name || `Unnamed Team ${g.group_id}`,
         // Logic: User is creator if their reg number matches the invitation sender_id
-        isCreator: creatorIdFromInvites === userRegNo,
+       isCreator: g.leader_id === userRegNo,
         members: g.students.map(assoc => ({
           id: assoc.student.user_id,
           registration_number: assoc.student.registration_number,

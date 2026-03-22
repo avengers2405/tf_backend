@@ -89,9 +89,60 @@ export const createAcademicProject = async (req, res) => {
   }
 };
 
-export const getAcademicProjectById = async (req, res) => {
-  const { userid } = req.params; // or req.query depending on your route
+export const getAcademicProjectByProjectId = async (req, res) => {
+  try {
+    const { id } = req.params
+    // console.log("req.params:", req.params)
+    // Convert to number (IMPORTANT because project_id is Int)
+    const projectId = parseInt(id)
 
+    
+    // console.log("project id recieved at backend is: ",projectId);
+    if (isNaN(projectId)) {
+      return res.status(400).json({ error: "Invalid project ID" })
+    }
+
+    const project = await prisma.project.findUnique({
+      where: {
+        project_id: projectId
+      },
+      include: {
+        supervisor: {
+          select: {
+            first_name: true,
+            last_name: true,
+            department: true
+          }
+        },
+        _count: {
+          select: {
+            groups: true
+          }
+        }
+      }
+    })
+
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: "Project not found"
+      })
+    }
+
+    res.status(200).json({
+      success: true,
+      data: project
+    })
+
+  } catch (error) {
+    console.error("Error fetching project by ID:", error)
+    res.status(500).json({ error: "Internal Server Error" })
+  }
+}
+
+export const getAcademicProjectByTeacherId = async (req, res) => {
+  const { userid } = req.params; // or req.query depending on your route
+  console.log("this route was hit");
   if (!userid) {
     return res.status(400).json({ error: "User ID is required." });
   }
@@ -131,6 +182,8 @@ export const getAcademicProjectById = async (req, res) => {
 
 export const getAllAcademicProjects = async (req, res) => {
   try {
+
+
     // Get all project opportunities for students to view
     const opportunities = await prisma.project.findMany({
       include: {

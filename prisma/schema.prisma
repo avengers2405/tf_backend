@@ -132,6 +132,7 @@ model Student {
   internshipApplications InternshipApplication[]
   notifications          Notifications[]
   user                   User                        @relation(fields: [user_id], references: [id])
+  led_groups             Group[]
   student_groups         Student_Group_Association[]
 }
 
@@ -258,6 +259,7 @@ model Project {
   phases                Project_Phase[]
   git_logs              Git_logbook_entries[]
   embeddings            ProjectEmbedding[]
+  deadline              DateTime @default(now())
 
   @@map("Project")
 }
@@ -293,10 +295,12 @@ model TeacherRole {
 model Group {
   group_name  String?
   group_id    Int                         @id @default(autoincrement())
+  leader_id   String?
   invitations Group_Invitation[]
   teachers    Group_Teacher_Association[]
   projects    Project_Group_Association[]
   students    Student_Group_Association[]
+  leader      Student?                    @relation(fields: [leader_id], references: [registration_number])
 
   @@map("Group")
 }

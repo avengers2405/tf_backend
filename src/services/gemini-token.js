@@ -2,7 +2,7 @@ import "dotenv/config";
 import logger from "./logger.js";
 
 // Count available keys in .env
-function countAvailableKeys() {
+ export function countAvailableKeys() {
   let count = 0;
   while (process.env[`GEMINI_API_KEY_${count}`]?.trim()) {
     count++;

@@ -1,66 +1,64 @@
-// services/embeddingService.js
-// Singleton wrapper around @xenova/transformers gte-small (384 dims)
-// The pipeline is loaded once and reused for all subsequent calls.
+// services/rag/embeddingService.js
+// Uses Xenova/all-MiniLM-L6-v2 — same 384 dims as gte-small but
+// significantly faster on CPU (no heavy cross-encoder overhead).
 
 import { pipeline } from "@xenova/transformers";
 
 let _pipelineInstance = null;
 let _loadingPromise = null;
 
-/**
- * Returns the singleton feature-extraction pipeline.
- * Safe to call concurrently — the first call loads, subsequent calls wait.
- */
+// Switch from "Supabase/gte-small" → "Xenova/all-MiniLM-L6-v2"
+// Both output 384-dim vectors so the DB schema and match function are unchanged.
+const MODEL_NAME = "Xenova/all-MiniLM-L6-v2";
+
 async function getPipeline() {
   if (_pipelineInstance) return _pipelineInstance;
-
-  // Prevent multiple simultaneous loads
   if (_loadingPromise) return _loadingPromise;
 
-  _loadingPromise = pipeline("feature-extraction", "Supabase/gte-small").then(
-    (p) => {
-      _pipelineInstance = p;
-      _loadingPromise = null;
-      console.log("[EmbeddingService] gte-small pipeline loaded.");
-      return p;
-    }
-  );
+  _loadingPromise = pipeline("feature-extraction", MODEL_NAME).then((p) => {
+    _pipelineInstance = p;
+    _loadingPromise = null;
+    console.log(`[EmbeddingService] ${MODEL_NAME} pipeline loaded.`);
+    return p;
+  });
 
   return _loadingPromise;
 }
 
 /**
- * Generate a normalized mean-pooled embedding for a text string.
- *
- * @param {string} text - Input text to embed.
- * @returns {Promise<number[]>} 384-dimensional float array.
+ * Embed a single string → 384-dim float array.
  */
 export async function generateEmbedding(text) {
   if (!text || typeof text !== "string" || text.trim().length === 0) {
-    throw new Error("[EmbeddingService] Cannot embed empty or non-string text.");
+    throw new Error("[EmbeddingService] Cannot embed empty text.");
   }
 
   const extractor = await getPipeline();
-
-  const output = await extractor(text.trim(), {
-    pooling: "mean",
-    normalize: true,
-  });
-
-  return Array.from(output.data); // plain JS array — ready for pgvector
+  const output = await extractor(text.trim(), { pooling: "mean", normalize: true });
+  return Array.from(output.data);
 }
 
 /**
- * Batch-embed an array of texts.
- * Runs sequentially to stay within memory limits of the local model.
+ * Embed multiple strings in one pipeline pass.
+ * Transformers.js batches them internally → faster than calling one-by-one.
  *
  * @param {string[]} texts
  * @returns {Promise<number[][]>}
  */
 export async function generateEmbeddingsBatch(texts) {
+  if (!texts?.length) return [];
+
+  const extractor = await getPipeline();
+
+  // Pass the whole array at once — the pipeline handles batching internally.
+  const output = await extractor(texts, { pooling: "mean", normalize: true });
+
+  // output.data is a flat Float32Array of length (n_texts * 384).
+  // Slice it back into per-text arrays.
+  const DIM = 384;
   const results = [];
-  for (const text of texts) {
-    results.push(await generateEmbedding(text));
+  for (let i = 0; i < texts.length; i++) {
+    results.push(Array.from(output.data.slice(i * DIM, (i + 1) * DIM)));
   }
   return results;
 }

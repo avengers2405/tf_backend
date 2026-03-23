@@ -125,12 +125,15 @@ export const getGroupsByProject = async (req, res) => {
     });
 
     const groups = associations.map((assoc) => ({
-      group_id: assoc.group.group_id,
-      group_name: assoc.group.group_name,
-      leader: assoc.group.leader,
-      members: assoc.group.students.map((s) => s.student),
-      member_count: assoc.group.students.length,
-    }));
+  group_id: assoc.group.group_id,
+  group_name: assoc.group.group_name,
+  status: assoc.status,           // ← add these two
+  applied_at: assoc.applied_at,   // ← 
+  reviewed_at: assoc.reviewed_at, // ←
+  leader: assoc.group.leader,
+  members: assoc.group.students.map((s) => s.student),
+  member_count: assoc.group.students.length,
+}));
 
     return res.status(200).json({
       project_id: Number(project_id),
@@ -139,6 +142,55 @@ export const getGroupsByProject = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching groups for project:", error);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+export const updateGroupApplicationStatus = async (req, res) => {
+  const { project_id, group_id } = req.params;
+  const { status } = req.body; // "ACCEPTED" or "REJECTED"
+
+  if (!["ACCEPTED", "REJECTED"].includes(status)) {
+    return res.status(400).json({ error: "Status must be ACCEPTED or REJECTED." });
+  }
+
+  try {
+    const association = await prisma.project_Group_Association.findUnique({
+      where: {
+        project_id_group_id: {
+          project_id: Number(project_id),
+          group_id: Number(group_id),
+        },
+      },
+    });
+
+    if (!association) {
+      return res.status(404).json({ error: "Application not found." });
+    }
+
+    if (association.status !== "PENDING") {
+      return res.status(400).json({ error: "Application has already been reviewed." });
+    }
+
+    const updated = await prisma.project_Group_Association.update({
+      where: {
+        project_id_group_id: {
+          project_id: Number(project_id),
+          group_id: Number(group_id),
+        },
+      },
+      data: {
+        status,
+        // reviewed_at: new Date(),
+      },
+    });
+
+    return res.status(200).json({
+      message: `Application ${status.toLowerCase()} successfully.`,
+      data: updated,
+    });
+  } catch (error) {
+    console.error("Error updating application status:", error);
     return res.status(500).json({ error: "Internal server error." });
   }
 };

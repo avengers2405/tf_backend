@@ -1,9 +1,10 @@
 import { Router } from "express";
-import {  applyProjectTeam } from "../controller/groupProject.controller.js";
+import {  applyProjectTeam , getGroupsByProject} from "../controller/groupProject.controller.js";
  
 const router = Router();
 
 router.post("/apply", applyProjectTeam);
+router.get("/:project_id/groups" , getGroupsByProject)
 
  
 

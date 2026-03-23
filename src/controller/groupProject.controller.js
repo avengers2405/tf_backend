@@ -73,3 +73,72 @@ export const applyProjectTeam = async (req, res) => {
     return res.status(500).json({ error: "Internal server error." });
   }
 };
+
+export const getGroupsByProject = async (req, res) => {
+  const { project_id } = req.params;
+
+  if (!project_id) {
+    return res.status(400).json({ error: "project_id is required." });
+  }
+
+  try {
+    const project = await prisma.project.findUnique({
+      where: { project_id: Number(project_id) },
+    });
+
+    if (!project) {
+      return res.status(404).json({ error: "Project not found." });
+    }
+
+    const associations = await prisma.project_Group_Association.findMany({
+      where: { project_id: Number(project_id) },
+      include: {
+        group: {
+          include: {
+            leader: {
+              select: {
+                registration_number: true,
+                first_name: true,
+                last_name: true,
+                primary_email: true,
+                cgpa: true,
+                department: true,
+              },
+            },
+            students: {
+              include: {
+                student: {
+                  select: {
+                    registration_number: true,
+                    first_name: true,
+                    last_name: true,
+                    primary_email: true,
+                    cgpa: true,
+                    department: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const groups = associations.map((assoc) => ({
+      group_id: assoc.group.group_id,
+      group_name: assoc.group.group_name,
+      leader: assoc.group.leader,
+      members: assoc.group.students.map((s) => s.student),
+      member_count: assoc.group.students.length,
+    }));
+
+    return res.status(200).json({
+      project_id: Number(project_id),
+      total_groups: groups.length,
+      data: groups,
+    });
+  } catch (error) {
+    console.error("Error fetching groups for project:", error);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+};

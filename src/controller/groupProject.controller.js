@@ -194,3 +194,71 @@ export const updateGroupApplicationStatus = async (req, res) => {
     return res.status(500).json({ error: "Internal server error." });
   }
 };
+
+export const getGroupStatusByProject = async (req, res) => {
+  console.log("backend hit");
+  const { project_id } = req.params;
+  console.log("project is: ",project_id);
+  const userId = req.query.userId;
+  console.log("userid ",userId)
+
+  if (!project_id || !userId) {
+    return res.status(400).json({ error: "project_id and userId are required." });
+  }
+
+  try {
+    // Find association for this project where the group's leader's user_id matches
+    const association = await prisma.project_Group_Association.findFirst({
+      where: {
+        project_id: Number(project_id),
+        group: {
+          leader: {
+            user_id: userId, // Group → leader (Student) → user_id
+          },
+        },
+      },
+      include: {
+        group: {
+          select: {
+            group_id: true,
+            group_name: true,
+            students: {
+              include: {
+                student: {
+                  select: {
+                    registration_number: true,
+                    first_name: true,
+                    last_name: true,
+                    primary_email: true,
+                    cgpa: true,
+                    department: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!association) {
+      console.log("Not association");
+      return res.status(200).json({ data: null });
+    }
+
+    return res.status(200).json({
+      
+      data: {
+        status: association.status,
+        group_id: association.group.group_id,
+        group_name: association.group.group_name,
+        is_leader: true,
+        members: association.group.students.map((s) => s.student),
+        member_count: association.group.students.length,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching group status by project:", error);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+};

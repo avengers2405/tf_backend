@@ -3,6 +3,7 @@ import prisma from '../db/prisma.js';
 import jwtService from './jwtService.js';
 import authConfig from '../config/authConfig.js';
 import emailService from './emailService.js';
+import logger from './logger.js';
 
 const SCRYPT_KEYLEN = 64;
 const PASSWORD_SCHEME = 'scrypt';
@@ -583,6 +584,7 @@ class AuthService {
   }
 
   async issueSessionTokens(userId) {
+    logger.info('Issuing session tokens', { userId });
     const accessToken = jwtService.generateAuthToken(
       {
         sub: userId,
@@ -622,6 +624,7 @@ class AuthService {
   async rotateRefreshToken(refreshToken) {
     const payload = jwtService.verifyAuthToken(refreshToken);
     if (!payload || payload.type !== 'refresh' || !payload.sub) {
+      logger.warn('Rotate refresh rejected: invalid payload');
       return null;
     }
 
@@ -634,6 +637,7 @@ class AuthService {
     });
 
     if (!activeSession) {
+      logger.warn('Rotate refresh: session not found');
       return null;
     }
 
@@ -642,6 +646,11 @@ class AuthService {
       activeSession.expires_at.getTime() <= Date.now() ||
       activeSession.user_id !== payload.sub
     ) {
+      logger.warn('Rotate refresh rejected: revoked/expired/mismatched', {
+        revoked: Boolean(activeSession.revoked_at),
+        expired: activeSession.expires_at.getTime() <= Date.now(),
+        userId: activeSession.user_id,
+      });
       return null;
     }
 
@@ -686,6 +695,7 @@ class AuthService {
       });
     });
 
+    logger.info('Rotate refresh succeeded', { userId: payload.sub, sessionId: activeSession.id });
     return {
       accessToken: nextAccessToken,
       refreshToken: nextRefreshToken,
@@ -696,6 +706,7 @@ class AuthService {
   async revokeRefreshToken(refreshToken) {
     const payload = jwtService.verifyAuthToken(refreshToken);
     if (!payload || payload.type !== 'refresh') {
+      logger.warn('Revoke refresh rejected: invalid payload');
       return false;
     }
 
@@ -711,6 +722,7 @@ class AuthService {
       },
     });
 
+    logger.info('Revoke refresh result', { count: result.count });
     return result.count > 0;
   }
 

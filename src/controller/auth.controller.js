@@ -2,13 +2,15 @@ import authService from '../services/authService.js';
 import authConfig from '../config/authConfig.js';
 import prisma from '../db/prisma.js';
 import emailService from '../services/emailService.js';
+import logger from '../services/logger.js';
 
 function setSessionCookies(res, accessToken, refreshToken, role) {
   const accessOptions = authConfig.getAccessCookieOptions();
   const refreshOptions = authConfig.getRefreshCookieOptions();
   const roleOptions = authConfig.getRoleCookieOptions();
   
-  console.log('Setting cookies with sameSite:', authConfig.cookieSameSite, 'secure:', authConfig.isProduction);
+  // console.log('Setting cookies with sameSite:', authConfig.cookieSameSite, 'secure:', authConfig.isProduction);
+  logger.info('Setting session cookies', { sameSite: authConfig.cookieSameSite, secure: authConfig.isProduction });
   
   res.cookie(
     authConfig.accessCookieName,
@@ -30,7 +32,8 @@ function setSessionCookies(res, accessToken, refreshToken, role) {
     );
   }
   
-  console.log('Cookies set successfully');
+  // console.log('Cookies set successfully');
+  logger.info('Cookies set successfully', { roleSet: Boolean(role) });
 }
 
 function clearSessionCookies(res) {
@@ -66,6 +69,7 @@ class AuthController {
       const { username, email, password } = req.body;
 
       if (!username || !email || !password) {
+        logger.warn('Register missing fields', { usernameProvided: Boolean(username), emailProvided: Boolean(email) });
         res.status(400).json({ error: 'username, email and password are required' });
         return;
       }
@@ -82,6 +86,7 @@ class AuthController {
       });
 
       if (existingUser) {
+        logger.warn('Register conflict', { username, email: normalizedEmail });
         res.status(409).json({ error: 'username or email already exists' });
         return;
       }
@@ -106,7 +111,8 @@ class AuthController {
         email: createdUser.email,
         magicLink,
       }).catch((emailError) => {
-        console.error('Registration verification email error:', emailError);
+        logger.error('Registration verification email error', { error: emailError?.message });
+        // console.error('Registration verification email error:', emailError);
       });
 
       res.status(201).json({
@@ -120,7 +126,8 @@ class AuthController {
         },
       });
     } catch (error) {
-      console.error('Registration error:', error);
+      // console.error('Registration error:', error);
+      logger.error('Registration error', { error: error?.message });
       res.status(500).json({ error: 'internal server error' });
     }
   }
@@ -157,7 +164,8 @@ class AuthController {
           email: userEmail,
           magicLink,
         }).catch((emailError) => {
-          console.error('Resend verification email error:', emailError);
+          logger.error('Resend verification email error', { error: emailError?.message });
+          // console.error('Resend verification email error:', emailError);
         });
       }
 
@@ -166,7 +174,8 @@ class AuthController {
         ...(process.env.NODE_ENV !== 'production' ? { preview_link: magicLink } : {}),
       });
     } catch (error) {
-      console.error('Request magic-link error:', error);
+      logger.error('Request magic-link error', { error: error?.message });
+      // console.error('Request magic-link error:', error);
       res.status(500).json({ error: 'internal server error' });
     }
   }
@@ -205,7 +214,8 @@ class AuthController {
         refresh_token: tokens.refreshToken,
       });
     } catch (error) {
-      console.error('Verify magic-link error:', error);
+      logger.error('Verify magic-link error', { error: error?.message });
+      // console.error('Verify magic-link error:', error);
       res.status(500).json({ error: 'internal server error' });
     }
   }
@@ -248,7 +258,8 @@ class AuthController {
         refresh_token: tokens.refreshToken,
       });
     } catch (error) {
-      console.error('Verify invite magic-link error:', error);
+      logger.error('Verify invite magic-link error', { error: error?.message });
+      // console.error('Verify invite magic-link error:', error);
       res.status(500).json({ error: 'internal server error' });
     }
   }
@@ -258,6 +269,7 @@ class AuthController {
       const { identifier, password } = req.body;
 
       if (!identifier || !password) {
+          logger.warn('Login missing fields', { identifierProvided: Boolean(identifier), passwordProvided: Boolean(password) });
         res.status(400).json({ error: 'identifier and password are required' });
         return;
       }
@@ -265,6 +277,7 @@ class AuthController {
       const user = await authService.validatePasswordLogin(identifier, password);
 
       if (!user) {
+          logger.warn('Login failed: user not found', { identifier });
         res.status(401).json({ error: 'invalid credentials' });
         return;
       }
@@ -277,7 +290,8 @@ class AuthController {
       const tokens = await authService.issueSessionTokens(user.id);
       const role = await authService.resolveUserRole(user.id);
 
-      console.log('Login successful for user:', user.id, 'role:', role);
+      // console.log('Login successful for user:', user.id, 'role:', role);
+        logger.info('Login successful', { userId: user.id, role });
       setSessionCookies(res, tokens.accessToken, tokens.refreshToken, role);
 
       res.status(200).json({
@@ -293,7 +307,8 @@ class AuthController {
         refresh_token: tokens.refreshToken,
       });
     } catch (error) {
-      console.error('Login error:', error);
+      // console.error('Login error:', error);
+        logger.error('Login error', { error: error?.message });
       res.status(500).json({ error: 'internal server error' });
     }
   }
@@ -303,6 +318,7 @@ class AuthController {
       const refresh_token = getRefreshTokenFromRequest(req);
 
       if (!refresh_token) {
+        logger.warn('Refresh missing token');
         res.status(400).json({ error: 'refresh_token is required' });
         return;
       }
@@ -310,6 +326,7 @@ class AuthController {
       const rotated = await authService.rotateRefreshToken(refresh_token);
 
       if (!rotated) {
+        logger.warn('Refresh failed: invalid or expired token');
         res.status(401).json({ error: 'invalid or expired refresh token' });
         return;
       }
@@ -324,7 +341,8 @@ class AuthController {
         refresh_token: rotated.refreshToken,
       });
     } catch (error) {
-      console.error('Refresh token error:', error);
+      // console.error('Refresh token error:', error);
+      logger.error('Refresh token error', { error: error?.message });
       res.status(500).json({ error: 'internal server error' });
     }
   }
@@ -335,13 +353,16 @@ class AuthController {
 
       if (refresh_token) {
         await authService.revokeRefreshToken(refresh_token);
+        logger.info('Logout revoked refresh token');
       }
 
       clearSessionCookies(res);
+      logger.info('Logout cleared session cookies');
 
       res.status(200).json({ message: 'logout successful' });
     } catch (error) {
-      console.error('Logout error:', error);
+      // console.error('Logout error:', error);
+      logger.error('Logout error', { error: error?.message });
       res.status(500).json({ error: 'internal server error' });
     }
   }
@@ -373,7 +394,8 @@ class AuthController {
         },
       });
     } catch (error) {
-      console.error('Me endpoint error:', error);
+      // console.error('Me endpoint error:', error);
+      logger.error('Me endpoint error', { error: error?.message });
       res.status(500).json({ error: 'internal server error' });
     }
   }

@@ -185,12 +185,16 @@ model Skill {
   id             String                      @id @default(cuid())
   name           String                      @unique
   student_skills Student_Skill_Association[]
+  created_at     DateTime                    @default(now())
+  updated_at     DateTime                    @updatedAt
 }
 
 model Student_Skill_Association {
   student_registration_number String
   skill_id                    String
   skill                       Skill  @relation(fields: [skill_id], references: [id])
+  created_at                  DateTime @default(now())
+  updated_at                  DateTime @updatedAt
 
   @@id([student_registration_number, skill_id])
 }
@@ -260,6 +264,8 @@ model Project {
   phases                Project_Phase[]
   git_logs              Git_logbook_entries[]
   embeddings            ProjectEmbedding[]
+  created_at            DateTime                     @default(now())
+  updated_at            DateTime                     @updatedAt
 
   @@map("Project")
 }
@@ -301,6 +307,8 @@ model Group {
   teachers    Group_Teacher_Association[]
   projects    Project_Group_Association[]
   students    Student_Group_Association[]
+  created_at DateTime                    @default(now())
+  updated_at DateTime                    @updatedAt
 
   @@map("Group")
 }
@@ -327,6 +335,7 @@ model Project_Group_Association {
   status     Application_Status @default(PENDING)
   group      Group   @relation(fields: [group_id], references: [group_id])
   project    Project @relation(fields: [project_id], references: [project_id])
+  created_at DateTime @default(now())
 
   @@id([project_id, group_id])
   @@map("Project_Group_Association")
@@ -342,6 +351,7 @@ model Project_Phase {
   comments          String?
   project_id        Int
   project           Project      @relation(fields: [project_id], references: [project_id], onDelete: Cascade)
+  created_at        DateTime     @default(now())
 
   @@id([phase_id, project_id])
   @@map("Project_Phase")

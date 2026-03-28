@@ -14,6 +14,7 @@ if len(sys.argv) > 1:
     pdf_path = sys.argv[2] if len(sys.argv) > 2 else "resume.pdf"
 else:
     # Fallback to default values if no arguments provided
+    print("Falling back to default values")
     analysis_results = ['AKSHIT MISHRA',
       'avengers2405',
       'notadecoder',

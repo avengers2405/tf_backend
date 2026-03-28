@@ -94,7 +94,7 @@ function generateRandomString(length) {
         if (code !== 0) {
           reject(new Error(`analyze.js exited with code ${code}`));
         } else {
-          await s3FileStorageService.uploadDocumentFromDisk(fileName, "anonymized-documents-katana")
+          await s3FileStorageService.uploadDocumentFromDisk(fileName.replace("resume", "anonymized"), "anonymized-documents-katana", fileName)
           resolve();
         }
       });

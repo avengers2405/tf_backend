@@ -85,7 +85,7 @@ export const getInternshipById = async (req, res) => {
       return res.status(404).json({ message: "Internship not found" })
     }
 
-    res.status(200).json(internship)
+    res.status(200).json({ data: internship })
   } catch (error) {
     console.error("getInternshipById error", { id, error: error.message })
     res.status(500).json({ message: "Failed to fetch internship", error: error.message })
